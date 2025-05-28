@@ -15,7 +15,10 @@ const geist = Geist({
 export const metadata: Metadata = {
   title: "DevHatch - OJT Portal",
   description: "Centralized OJT management platform for BatStateU DevOps Office - 3rd Floor, SteerHub Building",
-    generator: 'v0.dev'
+  generator: 'v0.dev',
+  icons: {
+    icon: '/favicon.ico',
+  },
 }
 
 export default function RootLayout({

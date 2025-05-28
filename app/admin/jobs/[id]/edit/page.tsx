@@ -15,7 +15,6 @@ import { ArrowLeft, Save, Loader2, AlertCircle, FileText, Eye, Download, Upload,
 import Link from "next/link"
 import { getJobPostingById, updateJobPosting } from "@/lib/jobs-service"
 import { showSuccessToast, showErrorToast, showLoadingToast } from "@/lib/toast-utils"
-import { uploadJobPDF, deleteJobPDF, validatePDFFile, formatFileSize, getFileInfoFromURL } from "@/lib/file-service"
 import type { JobPosting } from "@/types"
 
 export default function EditJobPage() {
@@ -104,16 +103,18 @@ export default function EditJobPage() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (!file) return
-
-    const validation = validatePDFFile(file)
-    if (!validation.isValid) {
-      setError(validation.error || "Invalid file")
-      return
+    if (file && file.type === "application/pdf") {
+      // Validate file size (max 10MB)
+      const maxSize = 10 * 1024 * 1024 // 10MB
+      if (file.size > maxSize) {
+        setError("File size must be less than 10MB")
+        return
+      }
+      setAttachedFile(file)
+      setError("")
+    } else {
+      setError("Please upload a PDF file")
     }
-
-    setAttachedFile(file)
-    setError("")
   }
 
   const removeAttachedFile = () => {
@@ -122,16 +123,77 @@ export default function EditJobPage() {
     if (fileInput) fileInput.value = ''
   }
 
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes'
+    const k = 1024
+    const sizes = ['Bytes', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+  }
+
+  const getFileInfoFromURL = (url: string) => {
+    try {
+      const urlParts = url.split('/')
+      const filename = urlParts[urlParts.length - 1]
+      const nameWithoutQuery = filename.split('?')[0]
+      return { name: nameWithoutQuery }
+    } catch {
+      return { name: "attachment.pdf" }
+    }
+  }
+
+  const uploadJobAttachment = async (file: File, jobId: string): Promise<string> => {
+    try {
+      // Validate file size (max 10MB)
+      const maxSize = 10 * 1024 * 1024 // 10MB
+      if (file.size > maxSize) {
+        throw new Error("File size must be less than 10MB")
+      }
+
+      console.log("📤 Uploading job attachment to Cloudinary:", file.name)
+      
+      // Create form data for upload
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('jobId', jobId)
+      
+      // Upload to Cloudinary via API route
+      const response = await fetch('/api/upload-job-attachment', {
+        method: 'POST',
+        body: formData,
+      })
+      
+      const result = await response.json()
+      
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Upload failed')
+      }
+      
+      console.log("✅ Job attachment uploaded successfully:", result.url)
+      return result.url
+    } catch (error: any) {
+      console.error("❌ Error uploading file:", error)
+      
+      // Provide specific error messages
+      if (error.message?.includes('size')) {
+        throw new Error("File size must be less than 10MB")
+      } else if (error.message?.includes('PDF')) {
+        throw new Error("Only PDF files are allowed")
+      } else if (error.message?.includes('network') || error.message?.includes('fetch')) {
+        throw new Error("Network error. Please check your connection and try again.")
+      } else {
+        throw new Error(`Upload failed: ${error.message || 'Unknown error occurred'}`)
+      }
+    }
+  }
+
   const removeCurrentPdf = async () => {
     if (!currentPdfUrl || !originalJob) return
     
     try {
       showLoadingToast("Removing PDF attachment...")
       
-      // Delete from storage
-      await deleteJobPDF(currentPdfUrl)
-      
-      // Update job posting
+      // Update job posting to remove PDF URL
       await updateJobPosting(jobId, { pdfUrl: "" })
       
       setCurrentPdfUrl("")
@@ -179,13 +241,8 @@ export default function EditJobPage() {
         showLoadingToast("Uploading new PDF attachment...")
         
         try {
-          // Delete old PDF if exists
-          if (currentPdfUrl) {
-            await deleteJobPDF(currentPdfUrl)
-          }
-          
-          // Upload new PDF
-          const newPdfUrl = await uploadJobPDF(attachedFile, jobId)
+          // Upload new PDF to Cloudinary
+          const newPdfUrl = await uploadJobAttachment(attachedFile, jobId)
           updateData.pdfUrl = newPdfUrl
           
           showSuccessToast("PDF uploaded successfully!")
@@ -495,7 +552,7 @@ export default function EditJobPage() {
                       </Button>
                     </div>
                     <p className="text-xs text-gray-600 mb-2">
-                      {getFileInfoFromURL(currentPdfUrl).name}
+                      {getFileInfoFromURL(currentPdfUrl)?.name || "attachment.pdf"}
                     </p>
                     <div className="flex gap-2">
                       <Button
@@ -514,7 +571,7 @@ export default function EditJobPage() {
                         onClick={() => {
                           const link = document.createElement('a')
                           link.href = currentPdfUrl
-                          link.download = getFileInfoFromURL(currentPdfUrl).name
+                          link.download = getFileInfoFromURL(currentPdfUrl)?.name || "attachment.pdf"
                           link.click()
                         }}
                       >

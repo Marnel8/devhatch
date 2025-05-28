@@ -30,6 +30,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import type { JobPosting } from "@/types"
 import { getJobPostingById, toggleJobStatus, deleteJobPosting, duplicateJobPosting } from "@/lib/jobs-service"
 import { showSuccessToast, showErrorToast, showLoadingToast } from "@/lib/toast-utils"
+import { getFileInfoFromURL } from "@/lib/file-service"
 
 export default function JobDetailsPage() {
   const params = useParams()
@@ -342,10 +343,11 @@ export default function JobDetailsPage() {
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <FileText className="w-5 h-5 mr-2" />
-                  Attachment
+                  Job Description Attachment
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
+                {/* File Info */}
                 <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
@@ -353,7 +355,7 @@ export default function JobDetailsPage() {
                     </div>
                     <div>
                       <p className="font-medium text-sm">
-                        Job Description.pdf
+                        {getFileInfoFromURL(job.pdfUrl)?.name || "Job Description.pdf"}
                       </p>
                       <p className="text-xs text-gray-500">PDF Document</p>
                     </div>
@@ -364,8 +366,8 @@ export default function JobDetailsPage() {
                       size="sm"
                       onClick={() => window.open(job.pdfUrl, '_blank')}
                     >
-                      <Eye className="w-4 h-4 mr-2" />
-                      View
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      Open in New Tab
                     </Button>
                     <Button
                       variant="outline"
@@ -373,13 +375,66 @@ export default function JobDetailsPage() {
                       onClick={() => {
                         const link = document.createElement('a')
                         link.href = job.pdfUrl!
-                        link.download = 'Job Description.pdf'
+                        link.download = getFileInfoFromURL(job.pdfUrl!)?.name || 'Job Description.pdf'
                         link.click()
                       }}
                     >
                       <Download className="w-4 h-4 mr-2" />
                       Download
                     </Button>
+                  </div>
+                </div>
+
+                {/* PDF Preview */}
+                <div className="border border-gray-200 rounded-lg overflow-hidden">
+                  <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
+                    <p className="text-sm font-medium text-gray-700">PDF Preview</p>
+                  </div>
+                  <div className="relative h-[600px] bg-white">
+                    <iframe
+                      src={`${job.pdfUrl}#toolbar=0&navpanes=0&scrollbar=1&view=FitH`}
+                      className="w-full h-full"
+                      title="PDF Preview"
+                      onError={(e) => {
+                        const target = e.target as HTMLIFrameElement
+                        target.style.display = 'none'
+                        const fallback = target.nextElementSibling as HTMLDivElement
+                        if (fallback) {
+                          fallback.style.display = 'flex'
+                        }
+                      }}
+                    />
+                    {/* Fallback when iframe fails */}
+                    <div className="absolute inset-0 bg-gray-50 flex-col items-center justify-center text-center p-6 hidden">
+                      <FileText className="w-16 h-16 text-gray-400 mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        PDF Preview Not Available
+                      </h3>
+                      <p className="text-gray-600 mb-6 max-w-md">
+                        Your browser blocked the PDF preview. You can still view or download the PDF using the buttons above.
+                      </p>
+                      <div className="flex gap-3">
+                        <Button
+                          onClick={() => window.open(job.pdfUrl, '_blank')}
+                          className="bg-blue-600 hover:bg-blue-700"
+                        >
+                          <ExternalLink className="w-4 h-4 mr-2" />
+                          Open in New Tab
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            const link = document.createElement('a')
+                            link.href = job.pdfUrl!
+                            link.download = getFileInfoFromURL(job.pdfUrl!)?.name || 'Job Description.pdf'
+                            link.click()
+                          }}
+                        >
+                          <Download className="w-4 h-4 mr-2" />
+                          Download PDF
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </CardContent>

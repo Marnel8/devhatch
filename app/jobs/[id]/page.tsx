@@ -19,7 +19,8 @@ import {
   Target,
   CheckCircle,
   AlertCircle,
-  ExternalLink
+  ExternalLink,
+  Download
 } from "lucide-react"
 import type { JobPosting } from "@/types"
 import { ref, get } from "firebase/database"
@@ -241,12 +242,122 @@ export default function JobDetailsPage() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Job Description Attachment */}
+            {job.pdfUrl && (
+              <Card className="border-0 shadow-xl">
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <FileText className="w-5 h-5 mr-2" />
+                    Additional Information
+                  </CardTitle>
+                  <CardDescription>
+                    Detailed job description and requirements document
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* File Info */}
+                  <div className="flex items-center flex-col md:flex-row gap-4 md:gap-0 justify-between p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <FileText className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm text-blue-900">
+                          Job Description Document
+                        </p>
+                        <p className="text-xs text-blue-700">PDF Document • View for complete details</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => window.open(job.pdfUrl, '_blank')}
+                        className="bg-blue-600 hover:bg-blue-700"
+                      >
+                        <ExternalLink className="w-4 h-4 mr-2" />
+                        View
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const link = document.createElement('a')
+                          link.href = job.pdfUrl!
+                          link.download = 'Job-Description.pdf'
+                          link.click()
+                        }}
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        Download
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* PDF Preview */}
+                  <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
+                    <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium text-gray-700">Document Preview</p>
+                        <p className="text-xs text-gray-500">Full details in PDF</p>
+                      </div>
+                    </div>
+                    <div className="relative h-[700px] sm:h-[600px]">
+                      <iframe
+                        src={`${job.pdfUrl}#toolbar=0&navpanes=0&scrollbar=1&view=FitH&zoom=page-width`}
+                        className="w-full h-full"
+                        title="Job Description PDF"
+                        onError={(e) => {
+                          const target = e.target as HTMLIFrameElement
+                          target.style.display = 'none'
+                          const fallback = target.nextElementSibling as HTMLDivElement
+                          if (fallback) {
+                            fallback.style.display = 'flex'
+                          }
+                        }}
+                      />
+                      {/* Fallback when iframe fails */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-slate-50 flex-col items-center justify-center text-center p-6 hidden">
+                        <FileText className="w-16 h-16 text-blue-400 mb-4" />
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">
+                          Document Preview Unavailable
+                        </h3>
+                        <p className="text-gray-600 mb-6 max-w-md">
+                          Your browser cannot display the PDF preview. Click the buttons below to view or download the complete job description.
+                        </p>
+                        <div className="flex gap-3">
+                          <Button
+                            onClick={() => window.open(job.pdfUrl, '_blank')}
+                            className="bg-blue-600 hover:bg-blue-700"
+                          >
+                            <ExternalLink className="w-4 h-4 mr-2" />
+                            Open in New Tab
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              const link = document.createElement('a')
+                              link.href = job.pdfUrl!
+                              link.download = 'Job-Description.pdf'
+                              link.click()
+                            }}
+                          >
+                            <Download className="w-4 h-4 mr-2" />
+                            Download PDF
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Application Card */}
-            <Card className="border-0 shadow-xl sticky top-6">
+            <Card className="border-0 shadow-xl top-6">
               <CardHeader>
                 <CardTitle className="text-xl">Ready to Apply?</CardTitle>
                 <CardDescription>

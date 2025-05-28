@@ -2,7 +2,7 @@ import { ref, push, set, get, update, remove, query, orderByChild, equalTo } fro
 import { database } from "@/app/lib/firebase"
 import type { Application } from "@/types"
 import { emailService, type EmailNotificationData } from "./email-service"
-import { getAllJobPostings } from "./jobs-service"
+import { getAllJobPostings, incrementJobFilledSlots, decrementJobFilledSlots } from "./jobs-service"
 
 // Create a new application
 export async function createApplication(applicationData: Omit<Application, "id">): Promise<string> {
@@ -88,6 +88,18 @@ export async function updateApplication(id: string, updates: Partial<Application
 // Delete an application
 export async function deleteApplication(id: string): Promise<void> {
   try {
+    // Get the application before deleting to check if it was hired
+    const application = await getApplicationById(id)
+    if (application && application.status === "hired") {
+      try {
+        await decrementJobFilledSlots(application.jobId)
+        console.log(`✅ Decremented filled slots for job ${application.jobId} - hired application deleted`)
+      } catch (slotError) {
+        console.error(`⚠️ Failed to update job slots when deleting hired application ${id}:`, slotError)
+        // Don't throw the error - deletion should proceed even if slot update fails
+      }
+    }
+
     const applicationRef = ref(database, `applications/${id}`)
     await remove(applicationRef)
     console.log("✅ Application deleted:", id)
@@ -172,6 +184,12 @@ export async function updateApplicationStatus(
   sendNotification: boolean = true
 ): Promise<void> {
   try {
+    // Get current application to check for status changes
+    const currentApplication = await getApplicationById(id)
+    if (!currentApplication) {
+      throw new Error("Application not found")
+    }
+
     const updates: Partial<Application> = {
       status,
       reviewedAt: new Date().toISOString(),
@@ -190,8 +208,29 @@ export async function updateApplicationStatus(
         updates.reviewNotes = notes
       }
     }
-    
+
     await updateApplication(id, updates)
+
+    // Handle job slot updates based on status change
+    const previousStatus = currentApplication.status
+    const newStatus = status
+
+    try {
+      // If changing TO hired status, increment filled slots
+      if (newStatus === "hired" && previousStatus !== "hired") {
+        await incrementJobFilledSlots(currentApplication.jobId)
+        console.log(`✅ Incremented filled slots for job ${currentApplication.jobId} - candidate hired`)
+      }
+      // If changing FROM hired status, decrement filled slots
+      else if (previousStatus === "hired" && newStatus !== "hired") {
+        await decrementJobFilledSlots(currentApplication.jobId)
+        console.log(`✅ Decremented filled slots for job ${currentApplication.jobId} - candidate status changed from hired`)
+      }
+    } catch (slotError) {
+      console.error(`⚠️ Failed to update job slots for application ${id}:`, slotError)
+      // Don't throw the error - status update should succeed even if slot update fails
+      // This ensures the application status is still updated for tracking purposes
+    }
     
     // Send email notification if requested
     if (sendNotification) {

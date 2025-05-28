@@ -13,7 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { MobileHeader } from "@/components/mobile-header"
 import { CheckCircle, Upload, FileText } from "lucide-react"
 import { database } from "../lib/firebase"
-import { ref as dbRef, push, set, get } from "firebase/database"
+import { ref as dbRef, push, set, get, query, orderByChild, equalTo } from "firebase/database"
 import { JobPosting } from "../../types"
 
 export default function ApplyPage() {
@@ -34,6 +34,9 @@ export default function ApplyPage() {
   const [error, setError] = useState("")
   const [jobs, setJobs] = useState<JobPosting[]>([])
   const [jobsLoading, setJobsLoading] = useState(true)
+  const [emailChecking, setEmailChecking] = useState(false)
+  const [emailAvailable, setEmailAvailable] = useState<boolean | null>(null)
+  const [userApplications, setUserApplications] = useState<string[]>([]) // Track applied project names
 
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -79,6 +82,32 @@ export default function ApplyPage() {
       }
     }
   }, [jobId, jobs])
+
+  // Check email availability with debounce
+  useEffect(() => {
+    const checkEmailAvailability = async () => {
+      if (!formData.email || !formData.email.endsWith("@g.batstate-u.edu.ph") || !formData.jobId) {
+        setEmailAvailable(null)
+        setUserApplications([])
+        return
+      }
+
+      setEmailChecking(true)
+      try {
+        const hasExisting = await checkExistingApplicationForProject(formData.email, formData.jobId)
+        setEmailAvailable(!hasExisting)
+      } catch (error) {
+        console.error("Error checking email availability:", error)
+        setEmailAvailable(null)
+        setUserApplications([])
+      } finally {
+        setEmailChecking(false)
+      }
+    }
+
+    const timeoutId = setTimeout(checkEmailAvailability, 500) // 500ms debounce
+    return () => clearTimeout(timeoutId)
+  }, [formData.email, formData.jobId, jobs])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData((prev) => ({
@@ -149,6 +178,64 @@ export default function ApplyPage() {
     }
   }
 
+  // Function to check if email already has an application for the same project
+  const checkExistingApplicationForProject = async (email: string, jobId: string): Promise<boolean> => {
+    try {
+      if (!jobId) {
+        setUserApplications([])
+        return false
+      }
+      
+      if (!email || !email.endsWith("@g.batstate-u.edu.ph")) {
+        setUserApplications([])
+        return false
+      }
+      
+      const applicationsRef = dbRef(database, "applications")
+      const emailQuery = query(applicationsRef, orderByChild("email"), equalTo(email))
+      const snapshot = await get(emailQuery)
+      
+      if (!snapshot.exists()) {
+        setUserApplications([])
+        return false
+      }
+      
+      // Check if any existing application is for the same project
+      const applications = Object.values(snapshot.val()) as any[]
+      const selectedJob = jobs.find(job => job.id === jobId)
+      
+      if (!selectedJob) {
+        setUserApplications([])
+        return false
+      }
+      
+      // Track all projects the user has applied to
+      const appliedProjects = applications.map(app => {
+        const appJob = jobs.find(job => job.id === app.jobId)
+        return appJob ? appJob.project : null
+      }).filter(Boolean) as string[]
+      
+      setUserApplications([...new Set(appliedProjects)]) // Remove duplicates
+      
+      // Check if there's an application for the same project
+      const hasApplicationForProject = appliedProjects.includes(selectedJob.project)
+      
+      return hasApplicationForProject
+    } catch (error) {
+      console.error("Error checking existing application for project:", error)
+      setUserApplications([])
+      
+      // With open rules, most errors should be network-related
+      if (error instanceof Error && error.message.includes("network")) {
+        throw new Error("Network error. Please check your connection and try again.")
+      }
+      
+      // For other errors, default to allowing the application
+      console.warn("Continuing with application process despite check error")
+      return false
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
@@ -156,6 +243,38 @@ export default function ApplyPage() {
     // Validate email domain for students
     if (formData.email && !formData.email.endsWith("@g.batstate-u.edu.ph")) {
       setError("Please use your official BatStateU email address (@g.batstate-u.edu.ph)")
+      return
+    }
+
+    // Check if email already has an application
+    try {
+      const hasExistingApplication = await checkExistingApplicationForProject(formData.email, formData.jobId)
+      if (hasExistingApplication) {
+        const selectedJob = jobs.find(job => job.id === formData.jobId)
+        const projectName = selectedJob ? selectedJob.project : "this project"
+        setError(`You have already applied to ${projectName}. You can apply to other projects instead.`)
+        return
+      }
+    } catch (error) {
+      console.error("Error checking existing application:", error)
+      if (error instanceof Error) {
+        setError(error.message)
+      } else {
+        setError("Failed to verify application eligibility. Please try again.")
+      }
+      return
+    }
+
+    // Additional client-side check for email availability
+    if (emailAvailable === false) {
+      const selectedJob = jobs.find(job => job.id === formData.jobId)
+      const projectName = selectedJob ? selectedJob.project : "this project"
+      setError(`You have already applied to ${projectName}. Please select a different project.`)
+      return
+    }
+
+    if (emailChecking) {
+      setError("Please wait while we verify your application eligibility.")
       return
     }
 
@@ -282,7 +401,7 @@ export default function ApplyPage() {
         <div className="mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold mb-2">Apply for OJT</h1>
           <p className="text-gray-600 text-sm sm:text-base">
-            Fill out the form below to apply for an OJT position at DevHatch
+            Fill out the form below to apply for an OJT position at DevHatch. You can apply to different projects, but only one application per project is allowed.
           </p>
         </div>
 
@@ -334,18 +453,86 @@ export default function ApplyPage() {
                   <Label htmlFor="email" className="text-sm font-medium">
                     Email Address *
                   </Label>
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    placeholder="your.name@g.batstate-u.edu.ph"
-                    className="h-11"
-                    required
-                  />
-                  <p className="text-xs text-slate-500">Please use your official BatStateU email address</p>
+                  <div className="relative">
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      placeholder="your.name@g.batstate-u.edu.ph"
+                      className={`h-11 pr-10 ${
+                        emailAvailable === false ? 'border-red-300 focus:border-red-500' : 
+                        emailAvailable === true ? 'border-green-300 focus:border-green-500' : ''
+                      }`}
+                      required
+                    />
+                    {formData.email && formData.email.endsWith("@g.batstate-u.edu.ph") && (
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                        {emailChecking ? (
+                          <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin" />
+                        ) : emailAvailable === true ? (
+                          <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                            <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                        ) : emailAvailable === false ? (
+                          <div className="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
+                            <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                        ) : null}
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-xs space-y-1">
+                    <p className="text-slate-500">Please use your official BatStateU email address. You can apply to different projects.</p>
+                    {formData.email && formData.email.endsWith("@g.batstate-u.edu.ph") && formData.jobId && emailAvailable === false && (
+                      <p className="text-red-600 font-medium">You have already applied to this project. You can apply to other projects instead.</p>
+                    )}
+                    {formData.email && formData.email.endsWith("@g.batstate-u.edu.ph") && formData.jobId && emailAvailable === true && (
+                      <p className="text-green-600 font-medium">You can apply to this project.</p>
+                    )}
+                    {formData.email && formData.email.endsWith("@g.batstate-u.edu.ph") && !formData.jobId && (
+                      <p className="text-blue-600 font-medium">Please select a position first to check availability.</p>
+                    )}
+                  </div>
                 </div>
+
+                {/* Show user's application status and available alternatives */}
+                {formData.email && formData.email.endsWith("@g.batstate-u.edu.ph") && userApplications.length > 0 && (
+                  <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <h4 className="text-sm font-medium text-blue-900 mb-2">Your Application Status</h4>
+                    <div className="space-y-2 text-sm">
+                      <div>
+                        <span className="text-blue-700">Applied to: </span>
+                        <span className="font-medium text-blue-900">{userApplications.join(', ')}</span>
+                      </div>
+                      {(() => {
+                        const availableProjects = [...new Set(jobs.map(job => job.project))].filter(
+                          project => !userApplications.includes(project)
+                        )
+                        if (availableProjects.length > 0) {
+                          return (
+                            <div>
+                              <span className="text-green-700">Still available: </span>
+                              <span className="font-medium text-green-800">{availableProjects.join(', ')}</span>
+                            </div>
+                          )
+                        } else {
+                          return (
+                            <div className="text-amber-700">
+                              You have applied to all available projects.
+                            </div>
+                          )
+                        }
+                      })()}
+                    </div>
+                  </div>
+                )}
+
                 <div className="space-y-2">
                   <Label htmlFor="phone" className="text-sm font-medium">
                     Phone Number *
@@ -532,8 +719,15 @@ export default function ApplyPage() {
                 </div>
               </div>
 
-              <Button type="submit" className="w-full h-12 text-base" disabled={loading}>
-                {loading ? "Submitting Application..." : "Submit Application"}
+              <Button 
+                type="submit" 
+                className="w-full h-12 text-base" 
+                disabled={loading || emailChecking || (emailAvailable === false && !!formData.jobId)}
+              >
+                {loading ? "Submitting Application..." : 
+                 emailChecking ? "Checking application eligibility..." :
+                 (emailAvailable === false && formData.jobId) ? "Already applied to this project" :
+                 "Submit Application"}
               </Button>
             </form>
           </CardContent>

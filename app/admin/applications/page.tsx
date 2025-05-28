@@ -172,6 +172,7 @@ export default function ApplicationsPage() {
       if (reviewAction === "for_interview") {
         // Schedule interview if date/time provided
         if (interviewData.date && interviewData.time) {
+          try {
           await scheduleInterview(
             selectedApplication.id,
             {
@@ -184,8 +185,18 @@ export default function ApplicationsPage() {
             user.id,
             sendEmailNotification
           )
+          } catch (error) {
+            console.error("Interview scheduling error:", error)
+            // Continue with the status update even if email fails
+            await updateApplicationStatus(
+              selectedApplication.id,
+              reviewAction,
+              user.id,
+              reviewNotes,
+              false // Don't try to send email again
+            )
+          }
         } else {
-          // Just update status without interview details
           await updateApplicationStatus(
             selectedApplication.id,
             reviewAction,
@@ -195,7 +206,7 @@ export default function ApplicationsPage() {
           )
         }
       } else {
-        // Update status for other actions
+        try {
         await updateApplicationStatus(
           selectedApplication.id,
           reviewAction,
@@ -203,13 +214,28 @@ export default function ApplicationsPage() {
           reviewNotes,
           sendEmailNotification
         )
+        } catch (error) {
+          console.error("Status update error:", error)
+          // Try updating without email if it failed
+          if (error instanceof Error && error.message.includes("email")) {
+            await updateApplicationStatus(
+              selectedApplication.id,
+              reviewAction,
+              user.id,
+              reviewNotes,
+              false // Don't try to send email
+            )
+          } else {
+            throw error // Re-throw if it's not an email error
+          }
+        }
       }
 
       // Refresh data to show updated status
       await loadData()
       
       const emailMessage = sendEmailNotification 
-        ? " and email notification sent" 
+        ? " (email notification may have failed)" 
         : " (no email sent)"
       
       toast.success(
@@ -233,8 +259,8 @@ export default function ApplicationsPage() {
         score: 0,
       })
     } catch (error) {
-      console.error("Error updating application:", error)
-      toast.error("Failed to update application")
+      console.error("Error in confirmReview:", error)
+      toast.error("Failed to update application status. Please try again.")
     }
   }
 
@@ -561,6 +587,28 @@ export default function ApplicationsPage() {
                       </>
                     )}
 
+                    {application.status === "for_interview" && (
+                      <>
+                        <Button
+                          size="sm"
+                          className="flex-1 lg:flex-none bg-green-600 hover:bg-green-700"
+                          onClick={() => handleReviewApplication(application, "hired")}
+                        >
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          Hire
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1 lg:flex-none text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
+                          onClick={() => handleReviewApplication(application, "rejected")}
+                        >
+                          <XCircle className="w-4 h-4 mr-2" />
+                          Reject
+                        </Button>
+                      </>
+                    )}
+
                     <Button
                       variant="outline"
                       size="sm"
@@ -598,7 +646,11 @@ export default function ApplicationsPage() {
           <DialogHeader>
             <DialogTitle>
               {reviewAction
-                ? `${reviewAction === "for_interview" ? "Schedule Interview" : "Reject"} Application`
+                ? `${reviewAction === "for_interview" 
+                    ? "Schedule Interview" 
+                    : reviewAction === "hired"
+                    ? "Hire Applicant"
+                    : "Reject"} Application`
                 : "Application Details"}
             </DialogTitle>
             <DialogDescription>
@@ -767,7 +819,11 @@ export default function ApplicationsPage() {
               {reviewAction && (
                 <div className="space-y-3">
                   <Label htmlFor="reviewNotes">
-                    {reviewAction === "for_interview" ? "Interview Notes" : "Rejection Reason"}
+                    {reviewAction === "for_interview" 
+                      ? "Interview Notes" 
+                      : reviewAction === "hired"
+                      ? "Hiring Notes"
+                      : "Rejection Reason"}
                   </Label>
                   <Textarea
                     id="reviewNotes"
@@ -776,6 +832,8 @@ export default function ApplicationsPage() {
                     placeholder={
                       reviewAction === "for_interview"
                         ? "Add interview notes..."
+                        : reviewAction === "hired"
+                        ? "Add any notes about the hire..."
                         : "Please provide a reason for rejection..."
                     }
                     rows={3}
@@ -810,10 +868,18 @@ export default function ApplicationsPage() {
                   <Button
                     onClick={confirmReview}
                     className={
-                      reviewAction === "for_interview" ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"
+                      reviewAction === "for_interview" 
+                        ? "bg-green-600 hover:bg-green-700" 
+                        : reviewAction === "hired"
+                        ? "bg-green-600 hover:bg-green-700"
+                        : "bg-red-600 hover:bg-red-700"
                     }
                   >
-                    {reviewAction === "for_interview" ? "Schedule Interview" : "Reject Application"}
+                    {reviewAction === "for_interview" 
+                      ? "Schedule Interview" 
+                      : reviewAction === "hired"
+                      ? "Confirm Hire"
+                      : "Reject Application"}
                   </Button>
                 )}
                 {!reviewAction && selectedApplication.status === "pending" && (
@@ -826,6 +892,30 @@ export default function ApplicationsPage() {
                     >
                       <Video className="w-4 h-4 mr-2" />
                       Schedule Interview
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
+                      onClick={() => {
+                        setReviewAction("rejected")
+                      }}
+                    >
+                      <XCircle className="w-4 h-4 mr-2" />
+                      Reject
+                    </Button>
+                  </div>
+                )}
+
+                {!reviewAction && selectedApplication.status === "for_interview" && (
+                  <div className="flex gap-2">
+                    <Button
+                      className="bg-green-600 hover:bg-green-700"
+                      onClick={() => {
+                        setReviewAction("hired")
+                      }}
+                    >
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Hire
                     </Button>
                     <Button
                       variant="outline"

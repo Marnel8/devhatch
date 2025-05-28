@@ -13,9 +13,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { ArrowLeft, Save, Eye, Upload, FileText, Loader2 } from "lucide-react"
+import { ArrowLeft, Save, Eye, Upload, FileText, Loader2, X } from "lucide-react"
 import Link from "next/link"
-import { createJobPosting } from "@/lib/jobs-service"
+import { createJobPosting, updateJobPosting } from "@/lib/jobs-service"
 import { showSuccessToast, showErrorToast, showLoadingToast } from "@/lib/toast-utils"
 import type { JobPosting } from "@/types"
 
@@ -25,6 +25,7 @@ export default function CreateJobPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
 
   const [formData, setFormData] = useState({
     title: "",
@@ -69,10 +70,78 @@ export default function CreateJobPage() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file && file.type === "application/pdf") {
+      // Validate file size (max 10MB)
+      const maxSize = 10 * 1024 * 1024 // 10MB
+      if (file.size > maxSize) {
+        setError("File size must be less than 10MB")
+        return
+      }
       setAttachedFile(file)
       setError("")
     } else {
       setError("Please upload a PDF file")
+    }
+  }
+
+  const removeAttachedFile = () => {
+    setAttachedFile(null)
+    // Reset file input
+    const fileInput = document.getElementById("file-upload") as HTMLInputElement
+    if (fileInput) {
+      fileInput.value = ""
+    }
+  }
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes'
+    const k = 1024
+    const sizes = ['Bytes', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+  }
+
+  const uploadJobAttachment = async (file: File, jobId: string): Promise<string> => {
+    try {
+      // Validate file size (max 10MB)
+      const maxSize = 10 * 1024 * 1024 // 10MB
+      if (file.size > maxSize) {
+        throw new Error("File size must be less than 10MB")
+      }
+
+      console.log("📤 Uploading job attachment to Cloudinary:", file.name)
+      
+      // Create form data for upload
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('jobId', jobId) // Use jobId instead of applicationId
+      
+      // Upload to Cloudinary via API route
+      const response = await fetch('/api/upload-job-attachment', {
+        method: 'POST',
+        body: formData,
+      })
+      
+      const result = await response.json()
+      
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Upload failed')
+      }
+      
+      console.log("✅ Job attachment uploaded successfully:", result.url)
+      return result.url
+    } catch (error: any) {
+      console.error("❌ Error uploading file:", error)
+      
+      // Provide specific error messages
+      if (error.message?.includes('size')) {
+        throw new Error("File size must be less than 10MB")
+      } else if (error.message?.includes('PDF')) {
+        throw new Error("Only PDF files are allowed")
+      } else if (error.message?.includes('network') || error.message?.includes('fetch')) {
+        throw new Error("Network error. Please check your connection and try again.")
+      } else {
+        throw new Error(`Upload failed: ${error.message || 'Unknown error occurred'}`)
+      }
     }
   }
 
@@ -111,8 +180,29 @@ export default function CreateJobPage() {
         createdAt: new Date().toISOString(),
       }
 
-      // Create job posting in Firebase
+      // Create job posting in Firebase first to get the job ID
       const jobId = await createJobPosting(jobData)
+      
+      // Upload PDF attachment if one is selected
+      if (attachedFile) {
+        setIsUploading(true)
+        showLoadingToast("Uploading PDF attachment...")
+        
+        try {
+          const pdfUrl = await uploadJobAttachment(attachedFile, jobId)
+          
+          // Update the job posting with the PDF URL
+          await updateJobPosting(jobId, { pdfUrl })
+          
+          console.log("PDF uploaded successfully:", pdfUrl)
+          showSuccessToast("PDF attachment uploaded successfully!")
+        } catch (uploadError: any) {
+          console.error("PDF upload failed:", uploadError)
+          showErrorToast("Job created but PDF upload failed: " + uploadError.message)
+        } finally {
+          setIsUploading(false)
+        }
+      }
       
       showSuccessToast("Job posting created successfully!")
       setSuccess(true)
@@ -392,17 +482,57 @@ export default function CreateJobPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
-                    <input type="file" accept=".pdf" onChange={handleFileChange} className="hidden" id="file-upload" />
-                    <label htmlFor="file-upload" className="cursor-pointer">
-                      <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                      <p className="text-sm text-gray-600">Click to upload PDF</p>
-                    </label>
-                  </div>
-                  {attachedFile && (
-                    <div className="flex items-center gap-2 text-sm text-green-600">
-                      <FileText className="w-4 h-4" />
-                      {attachedFile.name}
+                  <Label className="text-sm font-medium">
+                    Upload PDF Attachment (Optional)
+                  </Label>
+                  
+                  {!attachedFile ? (
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                      <input 
+                        type="file" 
+                        accept=".pdf" 
+                        onChange={handleFileChange} 
+                        className="hidden" 
+                        id="file-upload"
+                        disabled={loading || isUploading}
+                      />
+                      <label htmlFor="file-upload" className="cursor-pointer">
+                        <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                        <p className="text-sm text-gray-600">Click to upload PDF</p>
+                        <p className="text-xs text-gray-500 mt-1">Max 10MB • PDF format only</p>
+                      </label>
+                    </div>
+                  ) : (
+                    <div className="border border-gray-200 rounded-lg p-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <FileText className="w-4 h-4 text-red-500" />
+                          <div>
+                            <p className="text-sm font-medium">{attachedFile.name}</p>
+                            <p className="text-xs text-gray-500">
+                              {formatFileSize(attachedFile.size)}
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={removeAttachedFile}
+                          disabled={loading || isUploading}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      
+                      {isUploading && (
+                        <div className="mt-2">
+                          <div className="flex items-center gap-2 text-xs text-gray-600">
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                            Uploading...
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

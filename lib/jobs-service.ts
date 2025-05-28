@@ -202,6 +202,61 @@ export async function duplicateJobPosting(id: string): Promise<string> {
   }
 }
 
+// Increment filled slots for a job posting
+export async function incrementJobFilledSlots(jobId: string): Promise<void> {
+  try {
+    const jobRef = ref(database, `jobPostings/${jobId}`)
+    const snapshot = await get(jobRef)
+    
+    if (!snapshot.exists()) {
+      throw new Error("Job posting not found")
+    }
+    
+    const job = snapshot.val() as JobPosting
+    const newFilledSlots = job.filledSlots + 1
+    
+    // Ensure we don't exceed available slots
+    if (newFilledSlots > job.availableSlots) {
+      throw new Error("Cannot exceed available slots")
+    }
+    
+    await update(jobRef, {
+      filledSlots: newFilledSlots,
+      updatedAt: new Date().toISOString(),
+    })
+    
+    console.log("✅ Job filled slots incremented:", jobId, "New count:", newFilledSlots)
+  } catch (error) {
+    console.error("❌ Error incrementing job filled slots:", error)
+    throw new Error("Failed to increment job filled slots")
+  }
+}
+
+// Decrement filled slots for a job posting
+export async function decrementJobFilledSlots(jobId: string): Promise<void> {
+  try {
+    const jobRef = ref(database, `jobPostings/${jobId}`)
+    const snapshot = await get(jobRef)
+    
+    if (!snapshot.exists()) {
+      throw new Error("Job posting not found")
+    }
+    
+    const job = snapshot.val() as JobPosting
+    const newFilledSlots = Math.max(0, job.filledSlots - 1)
+    
+    await update(jobRef, {
+      filledSlots: newFilledSlots,
+      updatedAt: new Date().toISOString(),
+    })
+    
+    console.log("✅ Job filled slots decremented:", jobId, "New count:", newFilledSlots)
+  } catch (error) {
+    console.error("❌ Error decrementing job filled slots:", error)
+    throw new Error("Failed to decrement job filled slots")
+  }
+}
+
 // Get job statistics
 export async function getJobStatistics() {
   try {
