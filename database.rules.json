@@ -1,0 +1,33 @@
+{
+  "rules": {
+    ".read": "auth != null",
+    ".write": "auth != null",
+    "students": {
+      ".indexOn": ["ojtNumber"],
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "attendance": {
+      ".indexOn": ["studentId", "timestamp"],
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "projects": {
+      ".read": true,
+      ".write": "auth != null"
+    },
+    "jobPostings": {
+      ".read": true,
+      ".write": "auth != null"
+    },
+    "applications": {
+      ".read": "auth != null",
+      ".write": true,
+      ".validate": "newData.hasChildren(['firstName', 'lastName', 'email', 'studentId', 'course', 'year', 'jobId', 'coverLetter', 'submittedAt', 'status'])"
+    },
+    "$other": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    }
+  }
+} 
