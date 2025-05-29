@@ -6,10 +6,13 @@
       ".indexOn": ["email", "studentId", "jobId"]
     },
     "students": {
-      ".indexOn": ["ojtNumber"]
+      ".indexOn": ["ojtNumber", "performance/completion"]
     },
     "attendance": {
-      ".indexOn": ["studentId", "timestamp"]
+      ".indexOn": ["studentId", "timestamp", "date"]
+    },
+    "notifications": {
+      ".indexOn": ["createdAt"]
     }
   }
 } 

@@ -11,47 +11,75 @@ import { Download, TrendingUp, Users, Clock, Calendar, BarChart3, FileText, Awar
 import type { DateRange } from "react-day-picker"
 import { getReportStats, getAttendanceStats, getStudentPerformance } from "@/lib/firebase/reports"
 import type { ReportStats, PerformanceData } from "@/lib/firebase/reports"
+import { auth } from "@/app/lib/firebase"
+import { onAuthStateChanged } from "firebase/auth"
 
 export default function ReportsPage() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>()
   const [selectedProject, setSelectedProject] = useState("all")
   const [reportType, setReportType] = useState("overview")
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [stats, setStats] = useState<ReportStats | null>(null)
   const [attendanceData, setAttendanceData] = useState<{ date: string; present: number; absent: number; rate: number; }[]>([])
   const [performanceData, setPerformanceData] = useState<PerformanceData[]>([])
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true)
-      try {
-        const startDate = dateRange?.from ? new Date(dateRange.from) : undefined
-        const endDate = dateRange?.to ? new Date(dateRange.to) : undefined
-
-        // Fetch overview stats
-        const reportStats = await getReportStats(startDate, endDate)
-        setStats(reportStats)
-
-        // Fetch attendance data
-        const attendanceStats = await getAttendanceStats(startDate, endDate)
-        setAttendanceData(attendanceStats)
-
-        // Fetch performance data
-        const performanceStats = await getStudentPerformance(5)
-        setPerformanceData(performanceStats)
-      } catch (error) {
-        console.error('Error fetching report data:', error)
-      } finally {
+    // Check authentication state
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        setError("You must be signed in to view this page")
         setLoading(false)
+        return
       }
-    }
 
-    fetchData()
-  }, [dateRange])
+      // If user is authenticated, fetch data
+      fetchData()
+    })
+
+    return () => unsubscribe()
+  }, [])
+
+  const fetchData = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const startDate = dateRange?.from ? new Date(dateRange.from) : undefined
+      const endDate = dateRange?.to ? new Date(dateRange.to) : undefined
+
+      // Fetch overview stats
+      const reportStats = await getReportStats(startDate, endDate)
+      setStats(reportStats)
+
+      // Fetch attendance data
+      const attendanceStats = await getAttendanceStats(startDate, endDate)
+      setAttendanceData(attendanceStats)
+
+      // Fetch performance data
+      const performanceStats = await getStudentPerformance(5)
+      setPerformanceData(performanceStats)
+    } catch (error) {
+      console.error('Error fetching report data:', error)
+      setError("Failed to fetch report data. Please try again later.")
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const generateReport = (type: string) => {
     console.log(`Generating ${type} report...`)
     // TODO: Implement report generation
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold mb-2 text-red-600">{error}</h2>
+          <Button onClick={() => fetchData()}>Try Again</Button>
+        </div>
+      </div>
+    )
   }
 
   if (loading || !stats) {

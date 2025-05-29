@@ -61,7 +61,7 @@ export default function AdminLayout({
     { name: "Overview", href: "/admin", icon: BarChart3, exact: true },
     { name: "Job Management", href: "/admin/jobs", icon: Briefcase },
     { name: "Applications", href: "/admin/applications", icon: FileText },
-    { name: "Students", href: "/admin/students", icon: Users },
+    { name: "Interns", href: "/admin/interns", icon: Users },
     { name: "Attendance", href: "/admin/attendance", icon: Calendar },
     { name: "QR Scanner", href: "/admin/qr-scanner", icon: QrCode },
     { name: "Reports", href: "/admin/reports", icon: Database },

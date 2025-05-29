@@ -159,7 +159,7 @@ export default function DashboardPage() {
               <CardDescription>Your latest submitted work</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="flex flex-col gap-2">
                 {recentAccomplishments.map((accomplishment) => (
                   <div key={accomplishment.id} className="flex items-center justify-between p-3 border rounded-lg">
                     <div className="flex-1">
@@ -210,7 +210,7 @@ export default function DashboardPage() {
               <CardTitle>Quick Actions</CardTitle>
               <CardDescription>Common tasks and features</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className=" flex flex-col gap-2">
               <Link href="/dashboard/accomplishments">
                 <Button className="w-full justify-start">
                   <Award className="w-4 h-4 mr-2" />

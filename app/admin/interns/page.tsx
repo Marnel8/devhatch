@@ -193,7 +193,7 @@ export default function StudentsPage() {
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Students</p>
+                <p className="text-sm font-medium text-gray-600">Total Interns</p>
                 <p className="text-2xl font-bold">{stats.total}</p>
               </div>
               <Users className="h-8 w-8 text-blue-600" />
@@ -205,7 +205,7 @@ export default function StudentsPage() {
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Active Students</p>
+                <p className="text-sm font-medium text-gray-600">Active Interns</p>
                 <p className="text-2xl font-bold">{stats.active}</p>
               </div>
               <TrendingUp className="h-8 w-8 text-green-600" />
@@ -245,7 +245,7 @@ export default function StudentsPage() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
-                placeholder="Search students..."
+                placeholder="Search interns..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -279,7 +279,7 @@ export default function StudentsPage() {
       {/* Results Summary */}
       <div className="flex items-center justify-between">
         <p className="text-gray-600 text-sm sm:text-base">
-          Showing {filteredStudents.length} of {students.length} students
+          Showing {filteredStudents.length} of {students.length} interns
         </p>
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="bg-green-50 text-green-700">
@@ -359,11 +359,11 @@ export default function StudentsPage() {
         <Card>
           <CardContent className="text-center py-12">
             <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No students found</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No interns found</h3>
             <p className="text-gray-600">
               {searchTerm || projectFilter !== "all" || statusFilter !== "all"
                 ? "Try adjusting your search criteria"
-                : "No students have been enrolled yet"}
+                : "No interns have been added yet"}
             </p>
           </CardContent>
         </Card>

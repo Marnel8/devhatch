@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -15,12 +16,21 @@ import { database } from "@/app/lib/firebase"
 import { ref, get, query, orderByChild, equalTo } from "firebase/database"
 
 export default function JobsPage() {
+  const searchParams = useSearchParams()
   const [jobs, setJobs] = useState<JobPosting[]>([])
   const [filteredJobs, setFilteredJobs] = useState<JobPosting[]>([])
   const [searchTerm, setSearchTerm] = useState("")
-  const [projectFilter, setProjectFilter] = useState("all")
+  const [projectFilter, setProjectFilter] = useState(searchParams.get("project") || "all")
   const [loading, setLoading] = useState(true)
   const [showFilters, setShowFilters] = useState(false)
+
+  // Update filter when URL changes
+  useEffect(() => {
+    const project = searchParams.get("project")
+    if (project) {
+      setProjectFilter(project)
+    }
+  }, [searchParams])
 
   // Fetch jobs from Firebase Realtime Database
   useEffect(() => {
@@ -40,8 +50,11 @@ export default function JobsPage() {
           ...(data as Omit<JobPosting, "id">)
         }))
 
-        // Filter active jobs client-side
-        const activeJobs = jobsData.filter(job => job.isActive)
+        // Filter active jobs and jobs with available slots client-side
+        const activeJobs = jobsData.filter(job => 
+          job.isActive && 
+          (job.availableSlots - job.filledSlots) > 0
+        )
         
         setJobs(activeJobs)
         setFilteredJobs(activeJobs)

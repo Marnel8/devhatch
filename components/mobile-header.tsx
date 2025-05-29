@@ -2,9 +2,10 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"
-import { Egg, Menu } from "lucide-react"
+import { Menu } from "lucide-react"
 
 interface MobileHeaderProps {
   showAuth?: boolean
@@ -26,10 +27,14 @@ export function MobileHeader({ showAuth = true }: MobileHeaderProps) {
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-              <Egg className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-bold text-primary">DevHatch</span>
+            <Image
+              src="/logo.svg"
+              alt="DevHatch Logo"
+              width={32}
+              height={32}
+              className="w-8 h-8"
+            />
+            <p className="text-xl font-bold text-primary font-qurova">DEVHATCH</p>
           </Link>
 
           {/* Desktop Navigation */}
@@ -68,9 +73,13 @@ export function MobileHeader({ showAuth = true }: MobileHeaderProps) {
                 <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
                 <div className="flex flex-col space-y-4 mt-6">
                   <div className="flex items-center space-x-2 pb-4 border-b">
-                    <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                      <Egg className="w-5 h-5 text-white" />
-                    </div>
+                    <Image
+                      src="/logo.svg"
+                      alt="DevHatch Logo"
+                      width={32}
+                      height={32}
+                      className="w-8 h-8"
+                    />
                     <span className="text-xl font-bold text-primary">DevHatch</span>
                   </div>
 

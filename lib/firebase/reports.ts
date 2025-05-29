@@ -1,5 +1,5 @@
-import { db } from '@/app/lib/firebase';
-import { collection, query, where, getDocs, orderBy, Timestamp } from 'firebase/firestore';
+import { database } from '@/app/lib/firebase';
+import { ref, get, query, orderByChild, startAt, endAt } from 'firebase/database';
 import type { AttendanceRecord } from '@/types';
 
 export interface ProjectStats {
@@ -30,25 +30,30 @@ export interface ReportStats {
 }
 
 export const getProjectStats = async (projectId: string, startDate?: Date, endDate?: Date): Promise<ProjectStats> => {
-  const attendanceRef = collection(db, 'attendance');
-  let q = query(attendanceRef);
-
-  if (startDate && endDate) {
-    q = query(
-      attendanceRef,
-      where('date', '>=', startDate),
-      where('date', '<=', endDate),
-      where('project', '==', projectId)
-    );
-  }
-
-  const snapshot = await getDocs(q);
-  const records = snapshot.docs.map(doc => doc.data() as AttendanceRecord);
+  const attendanceRef = ref(database, 'attendance');
+  const attendanceQuery = query(attendanceRef, orderByChild('date'));
+  
+  const snapshot = await get(attendanceQuery);
+  const records: AttendanceRecord[] = [];
+  
+  snapshot.forEach((child) => {
+    const record = child.val() as AttendanceRecord;
+    if (record.project === projectId) {
+      if (startDate && endDate) {
+        const recordDate = new Date(record.date);
+        if (recordDate >= startDate && recordDate <= endDate) {
+          records.push(record);
+        }
+      } else {
+        records.push(record);
+      }
+    }
+  });
 
   const totalHours = records.reduce((sum, record) => sum + (record.hoursWorked || 0), 0);
   const uniqueStudents = new Set(records.map(record => record.studentId)).size;
   const completedRecords = records.filter(record => record.status === 'complete').length;
-  const completionRate = (completedRecords / records.length) * 100;
+  const completionRate = records.length > 0 ? (completedRecords / records.length) * 100 : 0;
 
   return {
     students: uniqueStudents,
@@ -58,23 +63,23 @@ export const getProjectStats = async (projectId: string, startDate?: Date, endDa
 };
 
 export const getAttendanceStats = async (startDate?: Date, endDate?: Date) => {
-  const attendanceRef = collection(db, 'attendance');
-  let q = query(attendanceRef, orderBy('date', 'desc'));
-
-  if (startDate && endDate) {
-    q = query(
-      attendanceRef,
-      where('date', '>=', startDate),
-      where('date', '<=', endDate),
-      orderBy('date', 'desc')
-    );
-  }
-
-  const snapshot = await getDocs(q);
-  const records = snapshot.docs.map(doc => ({
-    id: doc.id,
-    ...doc.data()
-  })) as AttendanceRecord[];
+  const attendanceRef = ref(database, 'attendance');
+  const attendanceQuery = query(attendanceRef, orderByChild('date'));
+  
+  const snapshot = await get(attendanceQuery);
+  const records: AttendanceRecord[] = [];
+  
+  snapshot.forEach((child) => {
+    const record = child.val() as AttendanceRecord;
+    if (startDate && endDate) {
+      const recordDate = new Date(record.date);
+      if (recordDate >= startDate && recordDate <= endDate) {
+        records.push(record);
+      }
+    } else {
+      records.push(record);
+    }
+  });
 
   // Group records by date
   const groupedRecords = records.reduce((acc, record) => {
@@ -87,67 +92,92 @@ export const getAttendanceStats = async (startDate?: Date, endDate?: Date) => {
   }, {} as { [key: string]: AttendanceRecord[] });
 
   // Calculate daily stats
-  return Object.entries(groupedRecords).map(([date, dayRecords]) => {
-    const total = dayRecords.length;
-    const present = dayRecords.filter(r => r.status !== 'absent').length;
-    const absent = total - present;
-    const rate = Math.round((present / total) * 100);
+  return Object.entries(groupedRecords)
+    .map(([date, dayRecords]) => {
+      const total = dayRecords.length;
+      const present = dayRecords.filter(r => r.status !== 'absent').length;
+      const absent = total - present;
+      const rate = Math.round((present / total) * 100);
 
-    return {
-      date,
-      present,
-      absent,
-      rate,
-    };
-  });
+      return {
+        date,
+        present,
+        absent,
+        rate,
+      };
+    })
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()); // Sort by date descending
 };
 
 export const getStudentPerformance = async (limit: number = 5): Promise<PerformanceData[]> => {
-  const studentsRef = collection(db, 'students');
-  const q = query(studentsRef, orderBy('performance.completion', 'desc'), orderBy('performance.attendance', 'desc'));
-  const snapshot = await getDocs(q);
+  const studentsRef = ref(database, 'students');
+  const snapshot = await get(studentsRef);
   
-  return snapshot.docs.slice(0, limit).map(doc => {
-    const data = doc.data();
-    return {
-      name: data.name,
-      project: data.project || '',
-      completion: data.performance?.completion || 0,
-      attendance: data.performance?.attendance || 0,
-    };
+  const students: PerformanceData[] = [];
+  snapshot.forEach((child) => {
+    const data = child.val();
+    if (data.name) {
+      students.push({
+        name: data.name,
+        project: data.project || '',
+        completion: data.performance?.completion || 0,
+        attendance: data.performance?.attendance || 0,
+      });
+    }
   });
+
+  // Sort by completion and attendance in memory instead
+  return students
+    .sort((a, b) => {
+      if (b.completion === a.completion) {
+        return b.attendance - a.attendance;
+      }
+      return b.completion - a.completion;
+    })
+    .slice(0, limit);
 };
 
 export const getReportStats = async (startDate?: Date, endDate?: Date): Promise<ReportStats> => {
-  const studentsRef = collection(db, 'students');
-  const attendanceRef = collection(db, 'attendance');
+  const studentsRef = ref(database, 'students');
+  const attendanceRef = ref(database, 'attendance');
 
   // Get all students
-  const studentsSnapshot = await getDocs(studentsRef);
-  const students = studentsSnapshot.docs.map(doc => doc.data());
+  const studentsSnapshot = await get(studentsRef);
+  const students: any[] = [];
+  studentsSnapshot.forEach((child) => {
+    students.push(child.val());
+  });
+  
   const totalStudents = students.length;
   const activeStudents = students.filter(student => student.isActive).length;
 
   // Get attendance records
-  let attendanceQuery = query(attendanceRef);
-  if (startDate && endDate) {
-    attendanceQuery = query(
-      attendanceRef,
-      where('date', '>=', startDate),
-      where('date', '<=', endDate)
-    );
-  }
-  const attendanceSnapshot = await getDocs(attendanceQuery);
-  const attendanceRecords = attendanceSnapshot.docs.map(doc => doc.data() as AttendanceRecord);
+  const attendanceSnapshot = await get(attendanceRef);
+  const attendanceRecords: AttendanceRecord[] = [];
+  attendanceSnapshot.forEach((child) => {
+    const record = child.val() as AttendanceRecord;
+    if (startDate && endDate) {
+      const recordDate = new Date(record.date);
+      if (recordDate >= startDate && recordDate <= endDate) {
+        attendanceRecords.push(record);
+      }
+    } else {
+      attendanceRecords.push(record);
+    }
+  });
 
   // Calculate total hours and attendance rate
   const totalHours = attendanceRecords.reduce((sum, record) => sum + (record.hoursWorked || 0), 0);
   const presentRecords = attendanceRecords.filter(record => record.status !== 'absent');
-  const averageAttendance = Math.round((presentRecords.length / attendanceRecords.length) * 100);
+  const averageAttendance = attendanceRecords.length > 0 
+    ? Math.round((presentRecords.length / attendanceRecords.length) * 100)
+    : 0;
 
   // Calculate completion rate based on complete status
   const completedRecords = attendanceRecords.filter(record => record.status === 'complete').length;
-  const completionRate = Math.round((completedRecords / attendanceRecords.length) * 100);
+  const completionRate = attendanceRecords.length > 0
+    ? Math.round((completedRecords / attendanceRecords.length) * 100)
+    : 0;
 
   // Calculate project distribution
   const projectDistribution = students.reduce((acc, student) => {
