@@ -26,8 +26,11 @@ import {
 import type { AttendanceRecord, AttendanceSummary } from "@/types"
 import { subscribeToAttendanceRecords, getAttendanceSummary, addAttendanceRecord, updateAttendanceRecord } from "@/lib/firebase/attendance"
 import { format } from "date-fns"
+import { useAuth } from "@/lib/auth-context"
+import { filterByProjectAccess, getAvailableProjects } from "@/lib/permissions"
 
 export default function AttendancePage() {
+  const { user } = useAuth()
   const [searchTerm, setSearchTerm] = useState("")
   const [dateFilter, setDateFilter] = useState(format(new Date(), 'yyyy-MM-dd'))
   const [projectFilter, setProjectFilter] = useState("all")
@@ -48,11 +51,13 @@ export default function AttendancePage() {
 
   useEffect(() => {
     const unsubscribe = subscribeToAttendanceRecords(dateFilter, (records) => {
-      setAttendanceRecords(records);
+      // Filter records based on user's project access
+      const filteredRecords = user ? filterByProjectAccess(user, records) : records
+      setAttendanceRecords(filteredRecords);
     });
 
     return () => unsubscribe();
-  }, [dateFilter]);
+  }, [dateFilter, user]);
 
   useEffect(() => {
     const fetchSummary = async () => {
@@ -67,6 +72,9 @@ export default function AttendancePage() {
 
     fetchSummary();
   }, [dateFilter, attendanceRecords]);
+
+  // Get available projects for filter dropdown
+  const availableProjects = user ? getAvailableProjects(user) : ["TRIOE", "MR. MED", "HAPTICS"]
 
   const filteredRecords = attendanceRecords.filter((record) => {
     const matchesSearch =
@@ -250,9 +258,11 @@ export default function AttendancePage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Projects</SelectItem>
-                <SelectItem value="TRIOE">TRIOE</SelectItem>
-                <SelectItem value="MR. MED">MR. MED</SelectItem>
-                <SelectItem value="HAPTICS">HAPTICS</SelectItem>
+                {availableProjects.map((project) => (
+                  <SelectItem key={project} value={project}>
+                    {project}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>

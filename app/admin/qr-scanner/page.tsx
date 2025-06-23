@@ -27,6 +27,8 @@ import {
 } from "lucide-react"
 import { attendanceService, type AttendanceRecord } from "../../services/attendance"
 import { format } from "date-fns"
+import { toastUtils } from "@/lib/toast-utils"
+import { canAccessAdmin } from "@/lib/permissions"
 
 export default function QRScannerPage() {
   const { user } = useAuth()
@@ -60,7 +62,7 @@ export default function QRScannerPage() {
       setTodayStats(stats)
       setRecentScans(recent)
     } catch (error) {
-      console.error("Error loading data:", error)
+      // Silent error handling
     } finally {
       setIsLoading(false)
     }
@@ -95,6 +97,8 @@ export default function QRScannerPage() {
         ...attendance,
       })
 
+      toastUtils.success(`✅ ${attendance.action} recorded for ${attendance.studentName}`)
+
       if (soundEnabled) {
         playSuccessSound()
       }
@@ -102,7 +106,6 @@ export default function QRScannerPage() {
       // Refresh data
       loadData()
     } catch (error) {
-      console.error("Error processing QR code:", error)
       setScanResult({
         success: false,
         message: "Failed to process QR code. Please try again.",
@@ -114,11 +117,35 @@ export default function QRScannerPage() {
     }
   }
 
-  const handleQrCodeError = (error: string) => {
-    console.error("QR Scanner error:", error)
+  const handleQrCodeError = (error: string, errorType?: 'camera_not_found' | 'camera_permission' | 'scanner_error') => {
+    
+    // Show specific toast notifications based on error type
+    switch (errorType) {
+      case 'camera_not_found':
+        toastUtils.error("📷 No camera device detected! Please connect a camera and refresh the page.", {
+          duration: 8000,
+          action: {
+            label: "Refresh",
+            onClick: () => window.location.reload()
+          }
+        })
+        break
+      case 'camera_permission':
+        toastUtils.warning("🔒 Camera access denied! Please enable camera permissions in your browser settings.", {
+          duration: 8000,
+          action: {
+            label: "How to enable",
+            onClick: () => window.open("https://support.google.com/chrome/answer/2693767", "_blank")
+          }
+        })
+        break
+      default:
+        toastUtils.error("❌ Camera error: " + error, { duration: 6000 })
+    }
+
     setScanResult({
       success: false,
-      message: "Failed to scan QR code. Please try again.",
+      message: error,
     })
 
     if (soundEnabled) {
@@ -127,16 +154,21 @@ export default function QRScannerPage() {
   }
 
   const handleManualEntry = async () => {
-    if (!manualEntry.trim()) return
+    if (!manualEntry.trim()) {
+      toastUtils.warning("⚠️ Please enter an OJT number before submitting.")
+      return
+    }
 
     try {
       const validation = await attendanceService.validateStudentQR(manualEntry.trim())
       
       if (!validation.isValid || !validation.studentData) {
+        const errorMsg = validation.message || "Invalid OJT number"
         setScanResult({
           success: false,
-          message: validation.message || "Invalid OJT number",
+          message: errorMsg,
         })
+        toastUtils.error("❌ " + errorMsg)
         if (soundEnabled) {
           playErrorSound()
         }
@@ -156,6 +188,8 @@ export default function QRScannerPage() {
         ...attendance,
       })
 
+      toastUtils.success(`✅ ${attendance.action} recorded for ${attendance.studentName}`)
+
       if (soundEnabled) {
         playSuccessSound()
       }
@@ -163,11 +197,12 @@ export default function QRScannerPage() {
       // Refresh data
       loadData()
     } catch (error) {
-      console.error("Error processing manual entry:", error)
+      const errorMsg = "Failed to process OJT number. Please try again."
       setScanResult({
         success: false,
-        message: "Failed to process OJT number. Please try again.",
+        message: errorMsg,
       })
+      toastUtils.error("❌ " + errorMsg)
 
       if (soundEnabled) {
         playErrorSound()
@@ -198,7 +233,7 @@ export default function QRScannerPage() {
     }
   }
 
-  if (!user || user.role !== "admin") {
+  if (!user || !canAccessAdmin(user)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Card className="max-w-md w-full">

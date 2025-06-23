@@ -7,6 +7,50 @@ import { ref, get } from "firebase/database"
 import { auth, database } from "@/app/lib/firebase"
 import type { User } from "@/types"
 
+// Helper function to determine user role based on email
+function determineUserRole(email: string | null): "superadmin" | "project_admin" | "student" {
+  if (!email) return "student"
+  
+  // Super admin for main admin account
+  if (email === "admin@g.batstate-u.edu.ph") {
+    return "superadmin"
+  }
+  
+  // Project admin for specific project admin emails
+  if (email.includes(".admin@devhatch.com")) {
+    return "project_admin"
+  }
+  
+  // Fallback for any other admin email patterns
+  if (email.includes("admin")) {
+    return "superadmin"
+  }
+  
+  return "student"
+}
+
+// Helper function to determine project access based on email and role
+function getProjectAccess(email: string | null, role: string): string[] | undefined {
+  if (!email) return undefined
+  
+  if (role === "superadmin") {
+    return ["TRIOE", "MR. MED", "HAPTICS"]
+  }
+  
+  if (role === "project_admin") {
+    // Determine project access based on email prefix
+    if (email.startsWith("trioe.admin")) return ["TRIOE"]
+    if (email.startsWith("mrmed.admin")) return ["MR. MED"]
+    if (email.startsWith("haptics.admin")) return ["HAPTICS"]
+    if (email.startsWith("multi.admin")) return ["TRIOE", "MR. MED", "HAPTICS"]
+    
+    // Default project admin access
+    return ["TRIOE"]
+  }
+  
+  return undefined
+}
+
 interface AuthContextType {
   user: User | null
   firebaseUser: FirebaseUser | null
@@ -43,23 +87,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               } else {
                 console.log("ℹ️ No user data in database, creating mock data")
                 // Create mock user data for demo if not in database
+                const role = determineUserRole(firebaseUser.email)
                 userData = {
                   id: firebaseUser.uid,
                   email: firebaseUser.email,
                   name: firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "User",
-                  role: firebaseUser.email?.includes("admin") ? "admin" : "student",
+                  role: role,
                   createdAt: new Date().toISOString(),
+                  // Set default project access for demo
+                  projectAccess: getProjectAccess(firebaseUser.email, role),
                 }
               }
             } catch (dbError) {
               console.warn("⚠️ Database fetch failed, using mock data:", dbError)
               // Create mock user data for demo
+              const role = determineUserRole(firebaseUser.email)
               userData = {
                 id: firebaseUser.uid,
                 email: firebaseUser.email,
                 name: firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "User",
-                role: firebaseUser.email?.includes("admin") ? "admin" : "student",
+                role: role,
                 createdAt: new Date().toISOString(),
+                // Set default project access for demo
+                projectAccess: getProjectAccess(firebaseUser.email, role),
               }
             }
 

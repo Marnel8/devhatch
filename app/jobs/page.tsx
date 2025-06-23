@@ -89,11 +89,11 @@ export default function JobsPage() {
   const getProjectColor = (project: string) => {
     switch (project) {
       case "TRIOE":
-        return "bg-blue-500"
+        return "bg-blue-600"
       case "MR. MED":
-        return "bg-purple-500"
+        return "bg-orange-500"
       case "HAPTICS":
-        return "bg-green-500"
+        return "bg-emerald-500"
       default:
         return "bg-gray-500"
     }
@@ -112,12 +112,25 @@ export default function JobsPage() {
     }
   }
 
+  const getProjectButtonColor = (project: string) => {
+    switch (project) {
+      case "TRIOE":
+        return "bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+      case "MR. MED":
+        return "bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700"
+      case "HAPTICS":
+        return "bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700"
+      default:
+        return "bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700"
+    }
+  }
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-slate-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading opportunities...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto"></div>
+          <p className="mt-4 text-slate-600">Loading opportunities...</p>
         </div>
       </div>
     )
@@ -128,19 +141,19 @@ export default function JobsPage() {
       <div>
         <label className="text-sm font-medium mb-2 block">Search</label>
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
           <Input
             placeholder="Search opportunities..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="pl-10 border-slate-300 focus-visible:!outline-orange-500 focus:!border-orange-500 focus:!ring-orange-500 focus:!ring-2 focus:!ring-offset-2"
           />
         </div>
       </div>
       <div>
         <label className="text-sm font-medium mb-2 block">Project</label>
         <Select value={projectFilter} onValueChange={setProjectFilter}>
-          <SelectTrigger>
+          <SelectTrigger className="border-slate-300 focus-visible:!outline-orange-500 focus:!border-orange-500 focus:!ring-orange-500 focus:!ring-2 focus:!ring-offset-2">
             <SelectValue placeholder="Filter by project" />
           </SelectTrigger>
           <SelectContent>
@@ -155,7 +168,7 @@ export default function JobsPage() {
   )
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
       <MobileHeader showAuth={true} />
 
       <div className="container mx-auto px-4 py-6 sm:py-8">
@@ -163,8 +176,8 @@ export default function JobsPage() {
         <div className="mb-6 sm:mb-8">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold">OJT Opportunities</h1>
-              <p className="text-gray-600 text-sm sm:text-base mt-1">Discover your next career opportunity</p>
+              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">OJT Opportunities</h1>
+              <p className="text-slate-600 text-sm sm:text-base mt-1">Discover your next career opportunity</p>
             </div>
             <Link href="/" className="hidden sm:block">
               <Button variant="ghost" size="sm">
@@ -178,12 +191,12 @@ export default function JobsPage() {
           <div className="flex gap-3 sm:hidden">
             <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
                 <Input
                   placeholder="Search..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 border-slate-300 focus-visible:!outline-orange-500 focus:!border-orange-500 focus:!ring-orange-500 focus:!ring-2 focus:!ring-offset-2"
                 />
               </div>
             </div>
@@ -206,16 +219,16 @@ export default function JobsPage() {
           <div className="hidden sm:block">
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
                 <Input
                   placeholder="Search opportunities..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 border-slate-300 focus-visible:!outline-orange-500 focus:!border-orange-500 focus:!ring-orange-500 focus:!ring-2 focus:!ring-offset-2"
                 />
               </div>
               <Select value={projectFilter} onValueChange={setProjectFilter}>
-                <SelectTrigger className="w-full sm:w-48">
+                <SelectTrigger className="w-full sm:w-48 border-slate-300 focus-visible:!outline-orange-500 focus:!border-orange-500 focus:!ring-orange-500 focus:!ring-2 focus:!ring-offset-2">
                   <Filter className="w-4 h-4 mr-2" />
                   <SelectValue placeholder="Filter by project" />
                 </SelectTrigger>
@@ -232,7 +245,7 @@ export default function JobsPage() {
 
         {/* Results Summary */}
         <div className="mb-4 sm:mb-6">
-          <p className="text-gray-600 text-sm sm:text-base">
+          <p className="text-slate-600 text-sm sm:text-base">
             Showing {filteredJobs.length} of {jobs.length} opportunities
           </p>
         </div>
@@ -240,7 +253,7 @@ export default function JobsPage() {
         {/* Job Listings */}
         <div className="space-y-4 sm:space-y-6">
           {filteredJobs.map((job) => (
-            <Card key={job.id} className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+            <Card key={job.id} className="bg-white border-0 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
               <CardHeader className="pb-3">
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                   <div className="space-y-2 flex-1">
@@ -251,12 +264,12 @@ export default function JobsPage() {
                       </Badge>
                       <div className={`w-2 h-2 rounded-full ${getProjectColor(job.project)}`} />
                     </div>
-                    <CardTitle className="text-lg sm:text-xl leading-tight">{job.title}</CardTitle>
-                    <CardDescription className="text-sm sm:text-base leading-relaxed">
+                    <CardTitle className="text-lg sm:text-xl leading-tight text-slate-900">{job.title}</CardTitle>
+                    <CardDescription className="text-sm sm:text-base leading-relaxed text-slate-600">
                       {job.description}
                     </CardDescription>
                   </div>
-                  <div className="flex sm:flex-col items-center sm:items-end gap-2 sm:gap-1 text-xs sm:text-sm text-gray-600">
+                  <div className="flex sm:flex-col items-center sm:items-end gap-2 sm:gap-1 text-xs sm:text-sm text-slate-600">
                     <div className="flex items-center">
                       <Users className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                       <span>
@@ -274,10 +287,10 @@ export default function JobsPage() {
                 <div className="space-y-4">
                   <div>
                     <h4 className="font-medium mb-2 text-sm sm:text-base">Requirements:</h4>
-                    <p className="text-gray-600 text-sm leading-relaxed">{job.requirements}</p>
+                    <p className="text-slate-600 text-sm leading-relaxed">{job.requirements}</p>
                   </div>
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                    <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm text-gray-600">
+                    <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm text-slate-600">
                       <div className="flex items-center">
                         <MapPin className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                         BatStateU Campus
@@ -294,7 +307,7 @@ export default function JobsPage() {
                         </Button>
                       </Link>
                       <Link href={`/apply?job=${job.id}`} className="flex-1 sm:flex-none">
-                        <Button className="w-full sm:w-auto">Apply Now</Button>
+                        <Button className={`w-full sm:w-auto ${getProjectButtonColor(job.project)} text-white font-semibold border-0`}>Apply Now</Button>
                       </Link>
                     </div>
                   </div>
@@ -306,9 +319,9 @@ export default function JobsPage() {
 
         {filteredJobs.length === 0 && (
           <div className="text-center py-12">
-            <Briefcase className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No opportunities found</h3>
-            <p className="text-gray-600 text-sm sm:text-base">
+            <Briefcase className="w-16 h-16 text-slate-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-slate-900 mb-2">No opportunities found</h3>
+            <p className="text-slate-600 text-sm sm:text-base">
               Try adjusting your search criteria or check back later for new postings.
             </p>
           </div>

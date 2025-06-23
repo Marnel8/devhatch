@@ -17,8 +17,8 @@ export function MobileHeader({ showAuth = true }: MobileHeaderProps) {
   const navigation = [
     { name: "Home", href: "/" },
     { name: "Browse Jobs", href: "/jobs" },
-    { name: "About", href: "/about" },
-    { name: "Contact", href: "/contact" },
+    // { name: "About", href: "/about" },
+    // { name: "Contact", href: "/contact" },
   ]
 
   return (
@@ -34,7 +34,7 @@ export function MobileHeader({ showAuth = true }: MobileHeaderProps) {
               height={32}
               className="w-8 h-8"
             />
-            <p className="text-xl font-bold text-primary font-qurova">DEVHATCH</p>
+            <p className="text-xl font-bold text-[#ff7720] font-qurova">DEV<span className="text-[#1f57c4]">HATCH</span></p>
           </Link>
 
           {/* Desktop Navigation */}
@@ -54,7 +54,7 @@ export function MobileHeader({ showAuth = true }: MobileHeaderProps) {
                   </Button>
                 </Link>
                 <Link href="/apply">
-                  <Button size="sm">Apply Now</Button>
+                  <Button size="sm" className="bg-orange-500 hover:bg-orange-600 text-white">Apply Now</Button>
                 </Link>
               </>
             )}
@@ -102,7 +102,7 @@ export function MobileHeader({ showAuth = true }: MobileHeaderProps) {
                         </Button>
                       </Link>
                       <Link href="/apply" onClick={() => setIsOpen(false)}>
-                        <Button className="w-full">Apply Now</Button>
+                        <Button className="w-full bg-blue-500 hover:bg-blue-600 text-white">Apply Now</Button>
                       </Link>
                     </div>
                   )}

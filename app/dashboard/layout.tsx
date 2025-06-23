@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Egg, LogOut, User, BarChart3, Menu, QrCode, Shield, Award } from "lucide-react"
 import Link from "next/link"
+import { canAccessAdmin } from "@/lib/permissions"
 
 export default function DashboardLayout({
   children,
@@ -55,7 +56,7 @@ export default function DashboardLayout({
     { name: "Admin Portal", href: "/admin", icon: Shield },
   ]
 
-  const navigation = user.role === "admin" ? adminNavigation : studentNavigation
+  const navigation = canAccessAdmin(user) ? adminNavigation : studentNavigation
 
   const SidebarContent = () => (
     <div className="flex h-full flex-col">
@@ -73,7 +74,7 @@ export default function DashboardLayout({
       <div className="px-6 py-4 border-b">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-            {user.role === "admin" ? (
+            {canAccessAdmin(user) ? (
               <Shield className="w-5 h-5 text-primary" />
             ) : (
               <User className="w-5 h-5 text-primary" />
@@ -81,7 +82,13 @@ export default function DashboardLayout({
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium truncate">{user.name}</p>
-            <p className="text-xs text-gray-500 capitalize">{user.role}</p>
+            <p className="text-xs text-gray-500 capitalize">
+              {user.role === "superadmin" 
+                ? "Super Admin" 
+                : user.role === "project_admin" 
+                  ? "Project Admin" 
+                  : user.role}
+            </p>
           </div>
         </div>
       </div>

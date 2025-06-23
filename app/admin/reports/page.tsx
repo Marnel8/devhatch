@@ -11,10 +11,11 @@ import { Download, TrendingUp, Users, Clock, Calendar, BarChart3, FileText, Awar
 import type { DateRange } from "react-day-picker"
 import { getReportStats, getAttendanceStats, getStudentPerformance } from "@/lib/firebase/reports"
 import type { ReportStats, PerformanceData } from "@/lib/firebase/reports"
-import { auth } from "@/app/lib/firebase"
-import { onAuthStateChanged } from "firebase/auth"
+import { useAuth } from "@/lib/auth-context"
+import { getAvailableProjects } from "@/lib/permissions"
 
 export default function ReportsPage() {
+  const { user } = useAuth()
   const [dateRange, setDateRange] = useState<DateRange | undefined>()
   const [selectedProject, setSelectedProject] = useState("all")
   const [reportType, setReportType] = useState("overview")
@@ -25,22 +26,17 @@ export default function ReportsPage() {
   const [performanceData, setPerformanceData] = useState<PerformanceData[]>([])
 
   useEffect(() => {
-    // Check authentication state
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        setError("You must be signed in to view this page")
-        setLoading(false)
-        return
-      }
-
-      // If user is authenticated, fetch data
+    if (user) {
       fetchData()
-    })
+    }
+  }, [user, dateRange, selectedProject])
 
-    return () => unsubscribe()
-  }, [])
+  // Get available projects for filter dropdown
+  const availableProjects = user ? getAvailableProjects(user) : ["TRIOE", "MR. MED", "HAPTICS"]
 
   const fetchData = async () => {
+    if (!user) return
+    
     setLoading(true)
     setError(null)
     try {
@@ -123,9 +119,11 @@ export default function ReportsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Projects</SelectItem>
-                  <SelectItem value="TRIOE">TRIOE</SelectItem>
-                  <SelectItem value="MR. MED">MR. MED</SelectItem>
-                  <SelectItem value="HAPTICS">HAPTICS</SelectItem>
+                  {availableProjects.map((project) => (
+                    <SelectItem key={project} value={project}>
+                      {project}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

@@ -19,7 +19,7 @@ export default function QRPage() {
   useEffect(() => {
     if (!loading && user) {
       // Redirect admin users to the admin QR scanner
-      if (user.role === "admin") {
+      if (user.role === "superadmin" || user.role === "project_admin") {
         router.push("/admin/qr-scanner")
         return
       }

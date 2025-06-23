@@ -12,9 +12,27 @@ export const DEMO_CREDENTIALS = {
     email: "student@g.batstate-u.edu.ph",
     password: "demo123456",
   },
-  admin: {
+  superadmin: {
     email: "admin@g.batstate-u.edu.ph",
     password: "admin123456",
+  },
+  projectAdmins: {
+    trioe: {
+      email: "trioe.admin@devhatch.com",
+      password: "trioe123456",
+    },
+    mrmed: {
+      email: "mrmed.admin@devhatch.com",
+      password: "mrmed123456",
+    },
+    haptics: {
+      email: "haptics.admin@devhatch.com",
+      password: "haptics123456",
+    },
+    multi: {
+      email: "multi.admin@devhatch.com",
+      password: "multi123456",
+    },
   },
 }
 

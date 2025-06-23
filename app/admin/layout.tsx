@@ -20,9 +20,11 @@ import {
   Database,
   Bell,
   Shield,
+  UserPlus,
 } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { canAccessAdmin, hasPermission, getUserPermissions } from "@/lib/permissions"
 
 export default function AdminLayout({
   children,
@@ -35,7 +37,7 @@ export default function AdminLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   useEffect(() => {
-    if (!loading && (!user || user.role !== "admin")) {
+    if (!loading && (!user || !canAccessAdmin(user))) {
       router.push("/login")
     }
   }, [user, loading, router])
@@ -48,7 +50,7 @@ export default function AdminLayout({
     )
   }
 
-  if (!user || user.role !== "admin") {
+  if (!user || !canAccessAdmin(user)) {
     return null
   }
 
@@ -57,16 +59,19 @@ export default function AdminLayout({
     router.push("/")
   }
 
+  const permissions = getUserPermissions(user)
+  
   const navigation = [
-    { name: "Overview", href: "/admin", icon: BarChart3, exact: true },
-    { name: "Job Management", href: "/admin/jobs", icon: Briefcase },
-    { name: "Applications", href: "/admin/applications", icon: FileText },
-    { name: "Interns", href: "/admin/interns", icon: Users },
-    { name: "Attendance", href: "/admin/attendance", icon: Calendar },
-    { name: "QR Scanner", href: "/admin/qr-scanner", icon: QrCode },
-    { name: "Reports", href: "/admin/reports", icon: Database },
-    { name: "Notifications", href: "/admin/notifications", icon: Bell },
-  ]
+    { name: "Overview", href: "/admin", icon: BarChart3, exact: true, show: true },
+    { name: "Job Management", href: "/admin/jobs", icon: Briefcase, show: permissions.canManageJobs },
+    { name: "Applications", href: "/admin/applications", icon: FileText, show: permissions.canManageApplications },
+    { name: "Interns", href: "/admin/interns", icon: Users, show: permissions.canManageInterns },
+    { name: "Attendance", href: "/admin/attendance", icon: Calendar, show: permissions.canManageAttendance },
+    { name: "QR Scanner", href: "/admin/qr-scanner", icon: QrCode, show: permissions.canManageAttendance },
+    { name: "Reports", href: "/admin/reports", icon: Database, show: permissions.canViewReports },
+    { name: "Notifications", href: "/admin/notifications", icon: Bell, show: permissions.canManageJobs },
+    { name: "User Management", href: "/admin/users", icon: UserPlus, show: permissions.canManageUsers },
+  ].filter(item => item.show)
 
   const isActive = (href: string, exact = false) => {
     if (exact) {
@@ -98,7 +103,18 @@ export default function AdminLayout({
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium text-white truncate">{user.name}</p>
-            <p className="text-xs text-slate-400">Administrator</p>
+            <p className="text-xs text-slate-400">
+              {user.role === "superadmin" 
+                ? "Super Administrator" 
+                : user.role === "project_admin" 
+                  ? "Project Administrator" 
+                  : "Administrator"}
+            </p>
+            {user.role === "project_admin" && user.projectAccess && (
+              <p className="text-xs text-slate-500 mt-1">
+                Projects: {user.projectAccess.join(", ")}
+              </p>
+            )}
           </div>
         </div>
       </div>

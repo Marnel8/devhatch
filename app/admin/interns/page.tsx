@@ -21,8 +21,11 @@ import {
   calculateCompletedHours
 } from "@/lib/students-service"
 import type { Student, AttendanceRecord, Accomplishment } from "@/types"
+import { useAuth } from "@/lib/auth-context"
+import { filterByProjectAccess, getAvailableProjects, hasPermission } from "@/lib/permissions"
 
 export default function StudentsPage() {
+  const { user } = useAuth()
   const [searchTerm, setSearchTerm] = useState("")
   const [projectFilter, setProjectFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState("all")
@@ -64,7 +67,10 @@ export default function StudentsPage() {
         }
       })
 
-      setStudents(studentsWithUpdatedHours)
+      // Filter students based on user's project access
+      const filteredStudents = user ? filterByProjectAccess(user, studentsWithUpdatedHours) : studentsWithUpdatedHours
+
+      setStudents(filteredStudents)
       setAttendanceRecords(attendanceData)
       setAccomplishments(accomplishmentsData)
     } catch (err) {

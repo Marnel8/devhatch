@@ -20,8 +20,11 @@ import {
   getJobStatistics 
 } from "@/lib/jobs-service"
 import { showSuccessToast, showErrorToast, showLoadingToast } from "@/lib/toast-utils"
+import { useAuth } from "@/lib/auth-context"
+import { filterByProjectAccess, getAvailableProjects } from "@/lib/permissions"
 
 export default function JobManagementPage() {
+  const { user } = useAuth()
   const [searchTerm, setSearchTerm] = useState("")
   const [projectFilter, setProjectFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState("all")
@@ -41,7 +44,10 @@ export default function JobManagementPage() {
         getAllJobPostings(),
         getJobStatistics()
       ])
-      setJobs(jobsData)
+      
+      // Filter jobs based on user's project access
+      const filteredJobs = user ? filterByProjectAccess(user, jobsData) : jobsData
+      setJobs(filteredJobs)
       setStats(statsData)
     } catch (error: any) {
       console.error("Error loading jobs:", error)
@@ -56,7 +62,7 @@ export default function JobManagementPage() {
   // Initial load
   useEffect(() => {
     loadJobs()
-  }, [])
+  }, [user])
 
   // Refresh jobs
   const handleRefresh = async () => {
@@ -64,6 +70,9 @@ export default function JobManagementPage() {
     await loadJobs()
     showSuccessToast("Jobs refreshed successfully!")
   }
+
+  // Get available projects for filter dropdown
+  const availableProjects = user ? getAvailableProjects(user) : ["TRIOE", "MR. MED", "HAPTICS"]
 
   const filteredJobs = jobs.filter((job) => {
     const matchesSearch =
@@ -259,9 +268,9 @@ export default function JobManagementPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Projects</SelectItem>
-                <SelectItem value="TRIOE">TRIOE</SelectItem>
-                <SelectItem value="MR. MED">MR. MED</SelectItem>
-                <SelectItem value="HAPTICS">HAPTICS</SelectItem>
+                {availableProjects.map((project) => (
+                  <SelectItem key={project} value={project}>{project}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>

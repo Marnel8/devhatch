@@ -44,6 +44,8 @@ import { useAuth } from "@/lib/auth-context"
 import { toast } from "sonner"
 import { PDFViewer } from "@/components/ui/pdf-viewer"
 import { Checkbox } from "@/components/ui/checkbox"
+import { createInternAccount, checkUserExists, type CreateInternData } from "@/lib/user-service"
+import { filterByProjectAccess, getAvailableProjects, hasPermission } from "@/lib/permissions"
 
 export default function ApplicationsPage() {
   const { user } = useAuth()
@@ -59,12 +61,15 @@ export default function ApplicationsPage() {
   const [reviewAction, setReviewAction] = useState<"for_review" | "for_interview" | "hired" | "rejected" | null>(null)
   const [reviewNotes, setReviewNotes] = useState("")
   const [sendEmailNotification, setSendEmailNotification] = useState(true)
+  const [createInternDialogOpen, setCreateInternDialogOpen] = useState(false)
+  const [creatingIntern, setCreatingIntern] = useState(false)
   
   // Data state
   const [applications, setApplications] = useState<Application[]>([])
   const [jobPostings, setJobPostings] = useState<JobPosting[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [existingInterns, setExistingInterns] = useState<Set<string>>(new Set())
   
   // Interview form state
   const [interviewData, setInterviewData] = useState({
@@ -92,8 +97,30 @@ export default function ApplicationsPage() {
         getAllJobPostings()
       ])
 
-      setApplications(applicationsData)
-      setJobPostings(jobsData)
+      // Filter data based on user's project access
+      const filteredJobs = user ? filterByProjectAccess(user, jobsData) : jobsData
+      const filteredApplications = applicationsData.filter(app => {
+        const job = jobsData.find(j => j.id === app.jobId)
+        return job && (user ? filterByProjectAccess(user, [job]).length > 0 : true)
+      })
+
+      setApplications(filteredApplications)
+      setJobPostings(filteredJobs)
+      
+      // Check for existing intern accounts
+      const existingInternEmails = new Set<string>()
+      for (const app of applicationsData) {
+        if (app.status === "hired") {
+          const email = app.email || app.studentEmail || ""
+          if (email) {
+            const userExists = await checkUserExists(email)
+            if (userExists) {
+              existingInternEmails.add(email)
+            }
+          }
+        }
+      }
+      setExistingInterns(existingInternEmails)
     } catch (err) {
       console.error("Error loading data:", err)
       setError("Failed to load applications data")
@@ -304,6 +331,61 @@ export default function ApplicationsPage() {
     } catch (error) {
       console.error("Error deleting application:", error)
       toast.error("Failed to delete application")
+    }
+  }
+
+  const handleCreateIntern = (application: Application) => {
+    setSelectedApplication(application)
+    setCreateInternDialogOpen(true)
+  }
+
+  const confirmCreateIntern = async () => {
+    if (!selectedApplication) return
+
+    try {
+      setCreatingIntern(true)
+      
+      // Check if user already exists
+      const email = selectedApplication.email || selectedApplication.studentEmail || ""
+      const userExists = await checkUserExists(email)
+      
+      if (userExists) {
+        toast.error("User account already exists with this email")
+        return
+      }
+
+      // Prepare intern data
+      const fullName = selectedApplication.firstName && selectedApplication.lastName 
+        ? `${selectedApplication.firstName} ${selectedApplication.lastName}` 
+        : (selectedApplication.studentName || "")
+      
+      const internData: CreateInternData = {
+        email: email,
+        password: selectedApplication.studentId || "temp123456", // Use student ID or temp password
+        name: fullName,
+        studentId: selectedApplication.studentId || "",
+        firstName: selectedApplication.firstName || "",
+        lastName: selectedApplication.lastName || "",
+        course: selectedApplication.course || "",
+        year: selectedApplication.year || "",
+        project: jobTitles[selectedApplication.jobId]?.split(" - ")[1] || "", // Extract project from job title
+        resumeUrl: selectedApplication.resumeUrl || selectedApplication.resumeURL || "",
+      }
+
+      // Create intern account
+      await createInternAccount(internData)
+      
+      // Add to existing interns set
+      setExistingInterns(prev => new Set(prev).add(email))
+      
+      toast.success(`Intern account created successfully! Email: ${email}, Password: ${internData.password}`)
+      setCreateInternDialogOpen(false)
+      setSelectedApplication(null)
+    } catch (error: any) {
+      console.error("Error creating intern account:", error)
+      toast.error(error.message || "Failed to create intern account")
+    } finally {
+      setCreatingIntern(false)
     }
   }
 
@@ -607,6 +689,34 @@ export default function ApplicationsPage() {
                           Reject
                         </Button>
                       </>
+                    )}
+
+                    {application.status === "hired" && (
+                      (() => {
+                        const email = application.email || application.studentEmail || ""
+                        const hasAccount = existingInterns.has(email)
+                        
+                        return hasAccount ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1 lg:flex-none text-green-600 border-green-200"
+                            disabled
+                          >
+                            <CheckCircle className="w-4 h-4 mr-2" />
+                            Account Created
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            className="flex-1 lg:flex-none bg-blue-600 hover:bg-blue-700"
+                            onClick={() => handleCreateIntern(application)}
+                          >
+                            <User className="w-4 h-4 mr-2" />
+                            Add as Intern
+                          </Button>
+                        )
+                      })()
                     )}
 
                     <Button
@@ -1035,6 +1145,105 @@ export default function ApplicationsPage() {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Intern Confirmation Dialog */}
+      <Dialog open={createInternDialogOpen} onOpenChange={setCreateInternDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create Intern Account</DialogTitle>
+            <DialogDescription>
+              Create a new user account for this hired student as an intern.
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedApplication && (
+            <div className="space-y-4 mt-4">
+                              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                  <h4 className="font-medium text-blue-900 mb-2">Account Details</h4>
+                  <div className="space-y-2 text-sm">
+                    <div>
+                      <span className="text-blue-700 font-medium">Student:</span>
+                      <p className="text-blue-900">
+                        {selectedApplication.firstName && selectedApplication.lastName 
+                          ? `${selectedApplication.firstName} ${selectedApplication.lastName}` 
+                          : selectedApplication.studentName}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-blue-700 font-medium">Email:</span>
+                      <p className="text-blue-900">{selectedApplication.email || selectedApplication.studentEmail}</p>
+                    </div>
+                    <div>
+                      <span className="text-blue-700 font-medium">Student ID:</span>
+                      <p className="text-blue-900">{selectedApplication.studentId || "Not provided"}</p>
+                    </div>
+                    {selectedApplication.course && (
+                      <div>
+                        <span className="text-blue-700 font-medium">Course:</span>
+                        <p className="text-blue-900">{selectedApplication.course}</p>
+                      </div>
+                    )}
+                    {selectedApplication.year && (
+                      <div>
+                        <span className="text-blue-700 font-medium">Year Level:</span>
+                        <p className="text-blue-900">{selectedApplication.year}</p>
+                      </div>
+                    )}
+                    {(selectedApplication.resumeUrl || selectedApplication.resumeURL) && (
+                      <div>
+                        <span className="text-blue-700 font-medium">Resume:</span>
+                        <p className="text-blue-900">✓ Will be linked to account</p>
+                      </div>
+                    )}
+                    <div>
+                      <span className="text-blue-700 font-medium">Default Password:</span>
+                      <p className="text-blue-900 font-mono bg-blue-100 px-2 py-1 rounded">
+                        {selectedApplication.studentId || "temp123456"}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-blue-700 font-medium">Role:</span>
+                      <p className="text-blue-900">Student (Intern)</p>
+                    </div>
+                  </div>
+                </div>
+
+              <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200">
+                <p className="text-yellow-800 text-sm">
+                  <strong>Note:</strong> The student will receive their login credentials and can change their password after first login.
+                </p>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setCreateInternDialogOpen(false)}
+                  disabled={creatingIntern}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={confirmCreateIntern}
+                  disabled={creatingIntern}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  {creatingIntern ? (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Creating Account...
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <User className="w-4 h-4" />
+                      Create Intern Account
+                    </div>
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

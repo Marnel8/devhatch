@@ -366,23 +366,56 @@ export default function ApplyPage() {
     }
   }
 
+  // Helper function to get project button colors
+  const getProjectButtonColor = (project: string) => {
+    switch (project) {
+      case "TRIOE":
+        return "bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+      case "MR. MED":
+        return "bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700"
+      case "HAPTICS":
+        return "bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700"
+      default:
+        return "bg-gradient-to-r from-slate-500 to-slate-600 hover:from-slate-600 hover:to-slate-700"
+    }
+  }
+
+  // Helper function to get project focus/border colors for form fields
+  const getProjectFieldColors = (project: string) => {
+    switch (project) {
+      case "TRIOE":
+        return "border-slate-300 focus-visible:!outline-blue-500 focus:!border-blue-500 focus:!ring-blue-500 focus:!ring-2 focus:!ring-offset-2"
+      case "MR. MED":
+        return "border-slate-300 focus-visible:!outline-orange-500 focus:!border-orange-500 focus:!ring-orange-500 focus:!ring-2 focus:!ring-offset-2"
+      case "HAPTICS":
+        return "border-slate-300 focus-visible:!outline-emerald-500 focus:!border-emerald-500 focus:!ring-emerald-500 focus:!ring-2 focus:!ring-offset-2"
+      default:
+        return "border-slate-300 focus-visible:!outline-orange-500 focus:!border-orange-500 focus:!ring-orange-500 focus:!ring-2 focus:!ring-offset-2" // Default to orange
+    }
+  }
+
+  // Get the selected project for dynamic styling
+  const selectedProject = formData.jobId && jobs.length > 0 
+    ? jobs.find(job => job.id === formData.jobId)?.project || ''
+    : ''
+
   if (submitted) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
         <MobileHeader showAuth={false} />
         <div className="flex items-center justify-center py-12 px-4">
           <Card className="max-w-md w-full">
             <CardContent className="text-center py-8">
               <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
               <h2 className="text-xl sm:text-2xl font-bold mb-2">Application Submitted!</h2>
-              <p className="text-gray-600 mb-6 text-sm sm:text-base leading-relaxed">
+              <p className="text-slate-600 mb-6 text-sm sm:text-base leading-relaxed">
                 Thank you for your interest in joining DevHatch. We'll review your application and get back to you soon.
               </p>
               <div className="space-y-3">
                 <Button variant="outline" className="w-full" onClick={() => router.push("/jobs")}>
                   Browse More Opportunities
                 </Button>
-                <Button className="w-full" onClick={() => router.push("/")}>
+                <Button className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold border-0" onClick={() => router.push("/")}>
                   Back to Home
                 </Button>
               </div>
@@ -394,13 +427,13 @@ export default function ApplyPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
       <MobileHeader showAuth={false} />
 
       <div className="container mx-auto px-4 py-6 sm:py-8 max-w-2xl">
         <div className="mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold mb-2">Apply for OJT</h1>
-          <p className="text-gray-600 text-sm sm:text-base">
+          <h1 className="text-2xl sm:text-3xl font-bold mb-2 text-slate-900">Apply for OJT</h1>
+          <p className="text-slate-600 text-sm sm:text-base">
             Fill out the form below to apply for an OJT position at DevHatch. You can apply to different projects, but only one application per project is allowed.
           </p>
         </div>
@@ -431,7 +464,7 @@ export default function ApplyPage() {
                       name="firstName"
                       value={formData.firstName}
                       onChange={handleInputChange}
-                      className="h-11"
+                      className={`h-11 ${getProjectFieldColors(selectedProject)}`}
                       required
                     />
                   </div>
@@ -444,7 +477,7 @@ export default function ApplyPage() {
                       name="lastName"
                       value={formData.lastName}
                       onChange={handleInputChange}
-                      className="h-11"
+                      className={`h-11 ${getProjectFieldColors(selectedProject)}`}
                       required
                     />
                   </div>
@@ -462,15 +495,21 @@ export default function ApplyPage() {
                       onChange={handleInputChange}
                       placeholder="your.name@g.batstate-u.edu.ph"
                       className={`h-11 pr-10 ${
-                        emailAvailable === false ? 'border-red-300 focus:border-red-500' : 
-                        emailAvailable === true ? 'border-green-300 focus:border-green-500' : ''
+                        emailAvailable === false ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 
+                        emailAvailable === true ? 'border-green-300 focus:border-green-500 focus:ring-green-500' : 
+                        getProjectFieldColors(selectedProject)
                       }`}
                       required
                     />
                     {formData.email && formData.email.endsWith("@g.batstate-u.edu.ph") && (
                       <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                         {emailChecking ? (
-                          <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin" />
+                          <div className={`w-4 h-4 border-2 border-gray-300 rounded-full animate-spin ${
+                            selectedProject === 'TRIOE' ? 'border-t-blue-600' :
+                            selectedProject === 'MR. MED' ? 'border-t-orange-500' :
+                            selectedProject === 'HAPTICS' ? 'border-t-emerald-500' :
+                            'border-t-orange-500'
+                          }`} />
                         ) : emailAvailable === true ? (
                           <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
                             <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -543,7 +582,7 @@ export default function ApplyPage() {
                     type="tel"
                     value={formData.phone}
                     onChange={handleInputChange}
-                    className="h-11"
+                    className={`h-11 ${getProjectFieldColors(selectedProject)}`}
                     required
                   />
                 </div>
@@ -561,7 +600,7 @@ export default function ApplyPage() {
                     name="studentId"
                     value={formData.studentId}
                     onChange={handleInputChange}
-                    className="h-11"
+                    className={`h-11 ${getProjectFieldColors(selectedProject)}`}
                     required
                   />
                 </div>
@@ -570,7 +609,7 @@ export default function ApplyPage() {
                     Course/Program *
                   </Label>
                   <Select onValueChange={(value) => handleSelectChange("course", value)}>
-                    <SelectTrigger className="h-11">
+                    <SelectTrigger className={`h-11 ${getProjectFieldColors(selectedProject)}`}>
                       <SelectValue placeholder="Select your course" />
                     </SelectTrigger>
                     <SelectContent>
@@ -588,7 +627,7 @@ export default function ApplyPage() {
                     Year Level *
                   </Label>
                   <Select onValueChange={(value) => handleSelectChange("year", value)}>
-                    <SelectTrigger className="h-11">
+                    <SelectTrigger className={`h-11 ${getProjectFieldColors(selectedProject)}`}>
                       <SelectValue placeholder="Select your year level" />
                     </SelectTrigger>
                     <SelectContent>
@@ -608,12 +647,12 @@ export default function ApplyPage() {
                     Preferred Position *
                   </Label>
                   {jobsLoading ? (
-                    <div className="h-11 bg-gray-100 rounded-md flex items-center px-3 text-gray-500">
+                    <div className="h-11 bg-slate-100 rounded-md flex items-center px-3 text-slate-500">
                       Loading available positions...
                     </div>
                   ) : (
                     <Select value={formData.jobId} onValueChange={(value) => handleSelectChange("jobId", value)}>
-                      <SelectTrigger className="h-11">
+                      <SelectTrigger className={`h-11 ${getProjectFieldColors(selectedProject)}`}>
                         <SelectValue placeholder="Select a position" />
                       </SelectTrigger>
                       <SelectContent>
@@ -627,7 +666,7 @@ export default function ApplyPage() {
                               <div className="flex items-center gap-2">
                                 <span>{getProjectIcon(job.project)}</span>
                                 <span>{job.title} - {job.project}</span>
-                                <span className="text-xs text-gray-500">
+                                <span className="text-xs text-slate-500">
                                   ({job.availableSlots - job.filledSlots} slots available)
                                 </span>
                               </div>
@@ -643,24 +682,51 @@ export default function ApplyPage() {
                     </p>
                   )}
                   {formData.jobId && jobs.length > 0 && (
-                    <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                    <div className={`mt-2 p-3 rounded-md border ${
+                      selectedProject === 'TRIOE' ? 'bg-blue-50 border-blue-200' :
+                      selectedProject === 'MR. MED' ? 'bg-orange-50 border-orange-200' :
+                      selectedProject === 'HAPTICS' ? 'bg-emerald-50 border-emerald-200' :
+                      'bg-slate-50 border-slate-200'
+                    }`}>
                       {(() => {
                         const selectedJob = jobs.find(job => job.id === formData.jobId)
                         if (!selectedJob) return null
+                        
+                        const projectColorClasses = selectedJob.project === 'TRIOE' ? {
+                          title: 'text-blue-900',
+                          badge: 'bg-blue-200 text-blue-800',
+                          description: 'text-blue-700',
+                          details: 'text-blue-600'
+                        } : selectedJob.project === 'MR. MED' ? {
+                          title: 'text-orange-900',
+                          badge: 'bg-orange-200 text-orange-800',
+                          description: 'text-orange-700',
+                          details: 'text-orange-600'
+                        } : selectedJob.project === 'HAPTICS' ? {
+                          title: 'text-emerald-900',
+                          badge: 'bg-emerald-200 text-emerald-800',
+                          description: 'text-emerald-700',
+                          details: 'text-emerald-600'
+                        } : {
+                          title: 'text-slate-900',
+                          badge: 'bg-slate-200 text-slate-800',
+                          description: 'text-slate-700',
+                          details: 'text-slate-600'
+                        }
                         
                         return (
                           <div className="space-y-2">
                             <div className="flex items-center gap-2">
                               <span className="text-lg">{getProjectIcon(selectedJob.project)}</span>
-                              <span className="font-medium text-blue-900">{selectedJob.title}</span>
-                              <span className="text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded-full">
+                              <span className={`font-medium ${projectColorClasses.title}`}>{selectedJob.title}</span>
+                              <span className={`text-xs px-2 py-1 rounded-full ${projectColorClasses.badge}`}>
                                 {selectedJob.project}
                               </span>
                             </div>
-                            <p className="text-sm text-blue-700 leading-relaxed">
+                            <p className={`text-sm leading-relaxed ${projectColorClasses.description}`}>
                               {selectedJob.description}
                             </p>
-                            <div className="text-xs text-blue-600">
+                            <div className={`text-xs ${projectColorClasses.details}`}>
                               <strong>Available slots:</strong> {selectedJob.availableSlots - selectedJob.filledSlots} of {selectedJob.availableSlots}
                             </div>
                           </div>
@@ -683,7 +749,7 @@ export default function ApplyPage() {
                     <Button
                       type="button"
                       variant="outline"
-                      className="w-full h-11 justify-start"
+                      className={`w-full h-11 justify-start ${getProjectFieldColors(selectedProject)}`}
                       onClick={() => document.getElementById("resume")?.click()}
                     >
                       <Upload className="w-4 h-4 mr-2" />
@@ -713,7 +779,7 @@ export default function ApplyPage() {
                     onChange={handleInputChange}
                     placeholder="Describe your interest, relevant experience, and what you hope to learn..."
                     rows={6}
-                    className="resize-none"
+                    className={`resize-none ${getProjectFieldColors(selectedProject)}`}
                     required
                   />
                 </div>
@@ -721,7 +787,11 @@ export default function ApplyPage() {
 
               <Button 
                 type="submit" 
-                className="w-full h-12 text-base" 
+                className={`w-full h-12 text-base text-white font-semibold border-0 ${
+                  formData.jobId && jobs.length > 0 
+                    ? getProjectButtonColor(jobs.find(job => job.id === formData.jobId)?.project || '')
+                    : 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700'
+                }`}
                 disabled={loading || emailChecking || (emailAvailable === false && !!formData.jobId)}
               >
                 {loading ? "Submitting Application..." : 

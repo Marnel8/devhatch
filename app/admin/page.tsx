@@ -18,8 +18,11 @@ import {
 import Link from "next/link"
 import { subscribeToDashboardStats, subscribeToRecentActivities, subscribeToSystemStatus } from "@/lib/firebase/dashboard"
 import type { DashboardStats, RecentActivity } from "@/types"
+import { useAuth } from "@/lib/auth-context"
+import { getAvailableProjects } from "@/lib/permissions"
 
 export default function AdminDashboard() {
+  const { user } = useAuth()
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([])
   const [systemStatus, setSystemStatus] = useState({
@@ -32,12 +35,34 @@ export default function AdminDashboard() {
   useEffect(() => {
     // Set up real-time subscriptions
     const unsubscribeStats = subscribeToDashboardStats((newStats) => {
-      setStats(newStats)
+      // Filter stats based on user's project access if they're a project admin
+      if (user?.role === "project_admin" && user.projectAccess) {
+        // Note: This is a simple approach. In a real implementation,
+        // you'd want the dashboard service to filter data on the server side
+        const filteredStats = {
+          ...newStats,
+          // For now, we'll show all stats but this could be project-specific
+        }
+        setStats(filteredStats)
+      } else {
+        setStats(newStats)
+      }
       setLoading(false)
     })
 
     const unsubscribeActivities = subscribeToRecentActivities((newActivities) => {
-      setRecentActivities(newActivities)
+      // Filter activities based on user's project access
+      if (user?.role === "project_admin" && user.projectAccess) {
+        // Filter activities related to user's projects
+        const filteredActivities = newActivities.filter(activity => {
+          // This would need to be implemented based on how activities store project info
+          // For now, show all activities
+          return true
+        })
+        setRecentActivities(filteredActivities)
+      } else {
+        setRecentActivities(newActivities)
+      }
     })
 
     const unsubscribeStatus = subscribeToSystemStatus((newStatus) => {
@@ -50,7 +75,10 @@ export default function AdminDashboard() {
       unsubscribeActivities()
       unsubscribeStatus()
     }
-  }, [])
+  }, [user])
+
+  // Get available projects for current user
+  const availableProjects = user ? getAvailableProjects(user) : []
 
   const statsConfig = [
     {

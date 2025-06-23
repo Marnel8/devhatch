@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 
 interface QrScannerProps {
   onResult: (result: string) => void
-  onError?: (error: string) => void
+  onError?: (error: string, errorType?: 'camera_not_found' | 'camera_permission' | 'scanner_error') => void
 }
 
 export function QrScanner({ onResult, onError }: QrScannerProps) {
@@ -25,7 +25,7 @@ export function QrScanner({ onResult, onError }: QrScannerProps) {
           .then(() => {
             scannerRef.current = null
           })
-          .catch((err) => console.error("Failed to stop scanner:", err))
+          .catch((err) => {})
       }
     }
   }, [])
@@ -33,6 +33,18 @@ export function QrScanner({ onResult, onError }: QrScannerProps) {
   const startScanning = async () => {
     try {
       setError(null)
+      
+      // Check if camera is available before starting scanner
+      const devices = await Html5Qrcode.getCameras()
+      if (!devices || devices.length === 0) {
+        const errorMsg = "No camera devices found. Please connect a camera and try again."
+        setError(errorMsg)
+        if (onError) {
+          onError(errorMsg, 'camera_not_found')
+        }
+        return
+      }
+
       const scanner = new Html5Qrcode("qr-reader")
       scannerRef.current = scanner
 
@@ -66,17 +78,34 @@ export function QrScanner({ onResult, onError }: QrScannerProps) {
           ) {
             setError("Please make sure the QR code is clearly visible and try again.")
             if (onError) {
-              onError(errorMessage)
+              onError(errorMessage, 'scanner_error')
             }
           }
         },
       )
-    } catch (err) {
-      console.error("Error starting scanner:", err)
+    } catch (err: any) {
       setIsScanning(false)
-      setError("Failed to start camera. Please check camera permissions and try again.")
+      
+      // Determine error type based on error message
+      const errorMsg = err?.message || err?.toString() || ""
+      let errorType: 'camera_not_found' | 'camera_permission' | 'scanner_error' = 'scanner_error'
+      let userFriendlyMsg = "Failed to start camera. Please try again."
+      
+      if (errorMsg.toLowerCase().includes("permission") || 
+          errorMsg.toLowerCase().includes("denied") ||
+          errorMsg.toLowerCase().includes("notallowed")) {
+        errorType = 'camera_permission'
+        userFriendlyMsg = "Camera permission denied. Please allow camera access and try again."
+      } else if (errorMsg.toLowerCase().includes("notfound") ||
+                 errorMsg.toLowerCase().includes("no camera") ||
+                 errorMsg.toLowerCase().includes("device not found")) {
+        errorType = 'camera_not_found'
+        userFriendlyMsg = "No camera devices found. Please connect a camera and try again."
+      }
+      
+      setError(userFriendlyMsg)
       if (onError) {
-        onError("Failed to start camera. Please check camera permissions.")
+        onError(userFriendlyMsg, errorType)
       }
     }
   }
@@ -88,7 +117,7 @@ export function QrScanner({ onResult, onError }: QrScannerProps) {
         setIsScanning(false)
         setError(null)
       } catch (err) {
-        console.error("Failed to stop scanner:", err)
+        // Silent error handling
       }
     }
   }

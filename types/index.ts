@@ -1,9 +1,40 @@
 export interface User {
   id: string
   email: string
-  role: "admin" | "student"
+  role: "superadmin" | "project_admin" | "student"
   name: string
   createdAt: string
+  // Project access for project admins
+  projectAccess?: string[] // Array of project names they can manage
+  // Additional properties for interns
+  studentId?: string
+  firstName?: string
+  lastName?: string
+  course?: string
+  year?: string
+  project?: string
+  resumeUrl?: string
+  isIntern?: boolean
+}
+
+// New interface for role-based permissions
+export interface UserPermissions {
+  canManageJobs: boolean
+  canManageApplications: boolean
+  canManageInterns: boolean
+  canManageAttendance: boolean
+  canViewReports: boolean
+  canManageUsers: boolean
+  canManageProjects: boolean
+  canManageAllProjects: boolean
+  projectAccess: string[] // Projects this user can manage
+}
+
+// Role definitions
+export type UserRole = "superadmin" | "project_admin" | "student"
+
+export interface RolePermissions {
+  [key: string]: Omit<UserPermissions, 'projectAccess'>
 }
 
 export interface Student extends User {

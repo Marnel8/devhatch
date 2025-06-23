@@ -7,6 +7,7 @@ import { ArrowRight, Egg, ExternalLink, Sparkles } from "lucide-react"
 import { database } from "@/app/lib/firebase"
 import { ref, get } from "firebase/database"
 import { Suspense } from "react"
+import Image from "next/image"
 
 // Types for project data
 interface Project {
@@ -40,7 +41,7 @@ async function getProjects(): Promise<Project[]> {
         description: "Advanced circuit board development and intelligent marketing automation systems",
         longDescription:
           "Pioneering the future of electronic design with cutting-edge circuit board development tools and AI-powered marketing solutions.",
-        color: "from-blue-500 to-blue-600",
+        color: "from-blue-600 to-blue-700",
         borderColor: "border-blue-200",
         bgColor: "bg-blue-50",
         textColor: "text-blue-700",
@@ -53,10 +54,10 @@ async function getProjects(): Promise<Project[]> {
         description: "Immersive 3D and Mixed Reality solutions for next-generation medical training",
         longDescription:
           "Revolutionizing medical education through immersive technologies, creating realistic training environments for healthcare professionals.",
-        color: "from-purple-500 to-purple-600",
-        borderColor: "border-purple-200",
-        bgColor: "bg-purple-50",
-        textColor: "text-purple-700",
+        color: "from-orange-500 to-orange-600",
+        borderColor: "border-orange-200",
+        bgColor: "bg-orange-50",
+        textColor: "text-orange-700",
         openings: 0, // Will be updated from jobPostings
         icon: "🥽",
         tags: ["VR/AR", "Healthcare", "3D"],
@@ -224,7 +225,7 @@ async function FooterProjectsList() {
         <li key={project.name}>
           <Link
             href={`/projects/${project.name.toLowerCase().replace(/\s+/g, "-")}`}
-            className="text-slate-300 hover:text-emerald-400 transition-colors duration-300 flex items-center group"
+            className="text-slate-300 hover:text-orange-400 transition-colors duration-300 flex items-center group"
           >
             <span className="text-lg mr-2">{project.icon}</span>
             <span>{project.name}</span>
@@ -257,14 +258,14 @@ export default function HomePage() {
             <div className="max-w-5xl mx-auto text-center">
               {/* Premium Badge */}
               <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-4 py-2 mb-8">
-                <Sparkles className="w-4 h-4 text-emerald-400" />
+                <Sparkles className="w-4 h-4 text-orange-500" />
                 <span className="text-sm font-medium text-white/90">Premium OJT Experience</span>
               </div>
 
               {/* Main Heading */}
               <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold text-white mb-8 leading-tight font-qurova">
                 Hatch Your
-                <span className="block bg-gradient-to-r from-emerald-400 via-blue-400 to-purple-400 bg-clip-text text-transparent">
+                <span className="block bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 bg-clip-text text-transparent">
                   Future in Tech
                 </span>
               </h1>
@@ -280,7 +281,7 @@ export default function HomePage() {
                 <Link href="/jobs" className="w-full sm:w-auto">
                   <Button
                     size="lg"
-                    className="w-full sm:w-auto h-14 px-8 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-semibold text-lg shadow-xl shadow-emerald-500/25 border-0"
+                    className="w-full sm:w-auto h-14 px-8 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold text-lg shadow-xl shadow-orange-500/25 border-0"
                   >
                     Explore Opportunities
                     <ArrowRight className="ml-2 w-5 h-5" />
@@ -301,8 +302,8 @@ export default function HomePage() {
           </div>
 
           {/* Decorative Elements */}
-          <div className="absolute top-1/4 left-10 w-72 h-72 bg-gradient-to-r from-emerald-500/20 to-blue-500/20 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-1/4 right-10 w-96 h-96 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-full blur-3xl"></div>
+          <div className="absolute top-1/4 left-10 w-72 h-72 bg-gradient-to-r from-orange-500/20 to-orange-600/20 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-1/4 right-10 w-96 h-96 bg-gradient-to-r from-orange-500/20 to-orange-700/20 rounded-full blur-3xl"></div>
         </div>
       </section>
 
@@ -312,12 +313,12 @@ export default function HomePage() {
           {/* Section Header */}
           <div className="text-center mb-16 sm:mb-20">
             <div className="inline-flex items-center space-x-2 bg-slate-100 rounded-full px-4 py-2 mb-6">
-              <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+              <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
               <span className="text-sm font-medium text-slate-600">Innovation Projects</span>
             </div>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 mb-6">
               Shape the Future with
-              <span className="block bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent">
+              <span className="block bg-gradient-to-r from-orange-600 to-orange-700 bg-clip-text text-transparent">
                 Cutting-Edge Projects
               </span>
             </h2>
@@ -340,8 +341,8 @@ export default function HomePage() {
         </div>
 
         {/* Background Decoration */}
-        <div className="absolute top-1/2 left-0 w-64 h-64 bg-gradient-to-r from-emerald-100 to-blue-100 rounded-full blur-3xl opacity-30 -translate-y-1/2"></div>
-        <div className="absolute bottom-0 right-0 w-80 h-80 bg-gradient-to-r from-purple-100 to-pink-100 rounded-full blur-3xl opacity-30"></div>
+        <div className="absolute top-1/2 left-0 w-64 h-64 bg-gradient-to-r from-orange-100 to-orange-200 rounded-full blur-3xl opacity-30 -translate-y-1/2"></div>
+        <div className="absolute bottom-0 right-0 w-80 h-80 bg-gradient-to-r from-orange-100 to-orange-300 rounded-full blur-3xl opacity-30"></div>
       </section>
 
       {/* Premium Footer */}
@@ -360,8 +361,8 @@ export default function HomePage() {
               {/* Brand Section */}
               <div className="lg:col-span-2">
                 <div className="flex items-center space-x-3 mb-6">
-                  <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg">
-                    <Egg className="w-6 h-6 text-white" />
+                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg">
+                    <Image src="/logo.svg" alt="DevHatch Logo" width={48} height={48} />
                   </div>
                   <span className="text-2xl font-bold">DevHatch</span>
                 </div>
@@ -370,7 +371,7 @@ export default function HomePage() {
                   experiences.
                 </p>
                 <div className="flex items-center space-x-4">
-                  <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse"></div>
+                  <div className="w-3 h-3 bg-orange-500 rounded-full animate-pulse"></div>
                   <span className="text-slate-400 text-sm">Actively recruiting talented students</span>
                 </div>
               </div>
@@ -388,7 +389,7 @@ export default function HomePage() {
                     <li key={link.name}>
                       <Link
                         href={link.href}
-                        className="text-slate-300 hover:text-emerald-400 transition-colors duration-300 flex items-center group"
+                        className="text-slate-300 hover:text-orange-400 transition-colors duration-300 flex items-center group"
                       >
                         <span>{link.name}</span>
                         <ArrowRight className="w-4 h-4 ml-2 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-300" />
@@ -427,14 +428,14 @@ export default function HomePage() {
                     <p>3rd Floor, SteerHub Building</p>
                     <p>Batangas State University</p>
                     <p>Batangas City, Philippines</p>
-                    <p className="text-emerald-400 font-medium">devops@gmail.com</p>
+                    <p className="text-orange-400 font-medium">devops@gmail.com</p>
                   </div>
                 </div>
                 <div className="text-center md:text-right">
                   <Link href="/apply">
                     <Button
                       size="lg"
-                      className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-semibold px-8 py-3 shadow-xl shadow-emerald-500/25 border-0"
+                      className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold px-8 py-3 shadow-xl shadow-orange-500/25 border-0"
                     >
                       Start Your Journey
                       <ArrowRight className="ml-2 w-5 h-5" />
@@ -456,8 +457,8 @@ export default function HomePage() {
         </div>
 
         {/* Decorative Elements */}
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-gradient-to-r from-emerald-500/10 to-blue-500/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-full blur-3xl"></div>
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-gradient-to-r from-orange-500/10 to-orange-600/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-gradient-to-r from-orange-500/10 to-orange-700/10 rounded-full blur-3xl"></div>
       </footer>
     </div>
   )

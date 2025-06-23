@@ -63,11 +63,11 @@ export default function JobDetailsPage() {
       case "TRIOE":
         return "bg-blue-50 text-blue-700 border-blue-200"
       case "MR. MED":
-        return "bg-purple-50 text-purple-700 border-purple-200"
+        return "bg-orange-50 text-orange-700 border-orange-200"
       case "HAPTICS":
         return "bg-emerald-50 text-emerald-700 border-emerald-200"
       default:
-        return "bg-gray-50 text-gray-700 border-gray-200"
+        return "bg-slate-50 text-slate-700 border-slate-200"
     }
   }
 
@@ -84,12 +84,25 @@ export default function JobDetailsPage() {
     }
   }
 
+  const getProjectButtonColor = (project: string) => {
+    switch (project) {
+      case "TRIOE":
+        return "bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+      case "MR. MED":
+        return "bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700"
+      case "HAPTICS":
+        return "bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700"
+      default:
+        return "bg-gradient-to-r from-slate-500 to-slate-600 hover:from-slate-600 hover:to-slate-700"
+    }
+  }
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-slate-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading job details...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto"></div>
+          <p className="mt-4 text-slate-600">Loading job details...</p>
         </div>
       </div>
     )
@@ -97,13 +110,13 @@ export default function JobDetailsPage() {
 
   if (error || !job) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
         <MobileHeader showAuth={true} />
         <div className="container mx-auto px-4 py-12">
           <div className="text-center">
-            <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Job Not Found</h1>
-            <p className="text-gray-600 mb-6">{error || "The job posting you're looking for doesn't exist or has been removed."}</p>
+            <AlertCircle className="w-16 h-16 text-slate-400 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-slate-900 mb-2">Job Not Found</h1>
+            <p className="text-slate-600 mb-6">{error || "The job posting you're looking for doesn't exist or has been removed."}</p>
             <Link href="/jobs">
               <Button>
                 <ArrowLeft className="w-4 h-4 mr-2" />
@@ -159,11 +172,11 @@ export default function JobDetailsPage() {
                   </div>
                 </div>
                 
-                <CardTitle className="text-2xl sm:text-3xl font-bold text-gray-900 leading-tight">
+                <CardTitle className="text-2xl sm:text-3xl font-bold text-slate-900 leading-tight">
                   {job.title}
                 </CardTitle>
                 
-                <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 mt-4">
+                <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600 mt-4">
                   <div className="flex items-center">
                     <MapPin className="w-4 h-4 mr-1" />
                     BatStateU Campus
@@ -193,7 +206,7 @@ export default function JobDetailsPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-700 leading-relaxed text-base">
+                <p className="text-slate-700 leading-relaxed text-base">
                   {job.description}
                 </p>
               </CardContent>
@@ -212,7 +225,7 @@ export default function JobDetailsPage() {
                   {(job.responsibilities?.split('. ') || []).filter(resp => resp.trim()).map((responsibility, index) => (
                     <div key={index} className="flex items-start space-x-3">
                       <CheckCircle className="w-5 h-5 text-emerald-500 mt-0.5 flex-shrink-0" />
-                      <p className="text-gray-700 leading-relaxed">
+                      <p className="text-slate-700 leading-relaxed">
                         {responsibility.trim()}{responsibility.endsWith('.') ? '' : '.'}
                       </p>
                     </div>
@@ -234,7 +247,7 @@ export default function JobDetailsPage() {
                   {job.requirements.split('. ').filter(req => req.trim()).map((requirement, index) => (
                     <div key={index} className="flex items-start space-x-3">
                       <div className="w-2 h-2 bg-blue-500 rounded-full mt-2.5 flex-shrink-0"></div>
-                      <p className="text-gray-700 leading-relaxed">
+                      <p className="text-slate-700 leading-relaxed">
                         {requirement.trim()}{requirement.endsWith('.') ? '' : '.'}
                       </p>
                     </div>
@@ -273,7 +286,7 @@ export default function JobDetailsPage() {
                       <Button
                         size="sm"
                         onClick={() => window.open(job.pdfUrl, '_blank')}
-                        className="bg-blue-600 hover:bg-blue-700"
+                        className={`text-white border-0 ${getProjectButtonColor(job.project)}`}
                       >
                         <ExternalLink className="w-4 h-4 mr-2" />
                         View
@@ -328,7 +341,7 @@ export default function JobDetailsPage() {
                         <div className="flex gap-3">
                           <Button
                             onClick={() => window.open(job.pdfUrl, '_blank')}
-                            className="bg-blue-600 hover:bg-blue-700"
+                            className={`text-white border-0 ${getProjectButtonColor(job.project)}`}
                           >
                             <ExternalLink className="w-4 h-4 mr-2" />
                             Open in New Tab
@@ -378,7 +391,7 @@ export default function JobDetailsPage() {
                     </div>
                     
                     <Link href={`/apply?job=${job.id}`} className="block">
-                      <Button className="w-full h-12 text-lg font-semibold">
+                      <Button className={`w-full h-12 text-lg font-semibold text-white border-0 ${getProjectButtonColor(job.project)}`}>
                         Apply Now
                         <ExternalLink className="w-5 h-5 ml-2" />
                       </Button>
@@ -400,19 +413,19 @@ export default function JobDetailsPage() {
 
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Project:</span>
+                    <span className="text-slate-600">Project:</span>
                     <span className="font-medium">{job.project}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Type:</span>
+                    <span className="text-slate-600">Type:</span>
                     <span className="font-medium">OJT Internship</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Duration:</span>
+                    <span className="text-slate-600">Duration:</span>
                     <span className="font-medium">240 hours</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Location:</span>
+                    <span className="text-slate-600">Location:</span>
                     <span className="font-medium">BatStateU Campus</span>
                   </div>
                 </div>
@@ -425,7 +438,7 @@ export default function JobDetailsPage() {
                 <CardTitle className="text-lg">About {job.project}</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-sm text-gray-600 leading-relaxed">
+                <div className="text-sm text-slate-600 leading-relaxed">
                   {job.project === "TRIOE" && (
                     <p>Advanced circuit board development and intelligent marketing automation systems. Pioneering the future of electronic design.</p>
                   )}
@@ -444,7 +457,7 @@ export default function JobDetailsPage() {
               <CardHeader>
                 <CardTitle className="text-lg">Questions?</CardTitle>
               </CardHeader>
-              <CardContent className="text-sm text-gray-600">
+              <CardContent className="text-sm text-slate-600">
                 <p className="mb-3">
                   Have questions about this position? Feel free to reach out to our team.
                 </p>
