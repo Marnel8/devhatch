@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>New Application Received - DevHatch OJT Portal</title>
+</head>
+<body>
+    <h1>🎉 New Application Received</h1>
+    
+    <p>Hi <%= recipientName %>,</p>
+    
+    <p>A new application has been submitted to the DevHatch OJT Portal.</p>
+    
+    <h2>Applicant Details</h2>
+    <ul>
+        <li><strong>Name:</strong> <%= applicantName %></li>
+        <li><strong>Email:</strong> <%= applicantEmail %></li>
+        <li><strong>Student ID:</strong> <%= studentId %></li>
+        <li><strong>Course:</strong> <%= course %></li>
+        <li><strong>Year:</strong> <%= year %></li>
+    </ul>
+    
+    <h2>Position Details</h2>
+    <ul>
+        <li><strong>Job Title:</strong> <%= jobTitle %></li>
+        <li><strong>Project:</strong> <%= projectName %></li>
+        <li><strong>Submitted At:</strong> <%= submittedAt %></li>
+    </ul>
+    
+    <p>Please review the application in the DevHatch OJT Portal admin dashboard.</p>
+    
+    <p>Best regards,<br>
+    <%= adminName %><br>
+    DevHatch OJT Portal</p>
+</body>
+</html> 

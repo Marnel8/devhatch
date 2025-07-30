@@ -14,7 +14,8 @@ import { MobileHeader } from "@/components/mobile-header"
 import { CheckCircle, Upload, FileText } from "lucide-react"
 import { database } from "../lib/firebase"
 import { ref as dbRef, push, set, get, query, orderByChild, equalTo } from "firebase/database"
-import { JobPosting } from "../../types"
+import { JobPosting, Application } from "../../types"
+import { sendApplicationStatusEmail, sendAdminNotification } from "@/lib/email-transport";
 
 export default function ApplyPage() {
   const [formData, setFormData] = useState({
@@ -312,8 +313,11 @@ export default function ApplyPage() {
 
       // Get job details for reference
       const selectedJob = jobs.find(job => job.id === formData.jobId)
-      const jobTitle = selectedJob ? selectedJob.title : "Unknown Position"
-      const jobProject = selectedJob ? selectedJob.project : ""
+      if (!selectedJob) {
+        throw new Error("Selected job not found")
+      }
+      const jobTitle = selectedJob.title
+      const jobProject = selectedJob.project
 
       // Prepare application data
       const applicationData = {
@@ -340,6 +344,45 @@ export default function ApplyPage() {
 
       console.log("Application submitted successfully with ID:", applicationId)
       setSubmitted(true)
+
+      // Send email notification to the applicant
+      const applicantNotificationData = {
+        application: {
+          id: applicationId,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          studentEmail: formData.email,
+          status: 'pending' as const,
+          studentName: `${formData.firstName} ${formData.lastName}`,
+          jobId: formData.jobId,
+          studentId: formData.studentId,
+          coverLetter: formData.coverLetter,
+          appliedAt: new Date().toISOString(),
+          jobTitle: jobTitle,
+          jobProject: jobProject,
+          resumeURL: resumeURL,
+          resumeFileName: resumeFile.name,
+          phone: formData.phone,
+          course: formData.course,
+          year: formData.year
+        },
+        jobPosting: selectedJob,
+        adminName: 'DevHatch Admin'
+      };
+
+      // Send email to applicant
+      const applicantEmailResult = await sendApplicationStatusEmail(applicantNotificationData);
+      if (!applicantEmailResult.success) {
+        console.warn("Failed to send applicant email:", applicantEmailResult.message);
+      }
+
+      // Send email to admin
+      const adminEmailResult = await sendAdminNotification(applicantNotificationData);
+      if (!adminEmailResult.success) {
+        console.warn("Failed to send admin notification:", adminEmailResult.message);
+      }
+
     } catch (error) {
       console.error("Error submitting application:", error)
       if (error instanceof Error) {

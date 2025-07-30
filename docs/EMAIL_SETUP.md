@@ -1,261 +1,113 @@
-# Free Email Notifications Setup Guide (EmailJS)
+# Email Configuration for Nodemailer (Server-Side)
 
-This guide will help you set up **completely free** email notifications for the DevHatch OJT Portal using EmailJS.
+## Environment Variables
 
-## Why EmailJS?
+Create a `.env` file in the project root with the following configuration:
 
-✅ **100% Free** - 200 emails/month forever  
-✅ **No Credit Card Required** - truly free tier  
-✅ **Easy Setup** - works with Gmail, Outlook, Yahoo  
-✅ **Client-Side** - no server configuration needed  
-✅ **Reliable** - used by thousands of developers  
-
-## Quick Setup (5 minutes)
-
-### 1. Create EmailJS Account
-
-1. Go to https://www.emailjs.com/
-2. Click **"Sign Up"** (it's free!)
-3. Verify your email address
-
-### 2. Connect Your Email Service
-
-1. **Go to "Email Services"** in your EmailJS dashboard
-2. **Click "Add New Service"**
-3. **Choose your email provider**:
-   - **Gmail** (recommended)
-   - Outlook
-   - Yahoo
-   - Or any SMTP service
-
-4. **For Gmail**:
-   - Click "Connect Account"
-   - Sign in with your Gmail
-   - Allow EmailJS permissions
-
-### 3. Create Email Template
-
-1. **Go to "Email Templates"** in dashboard
-2. **Click "Create New Template"**
-3. **Use this template**:
-
-```
-Subject: {{subject}}
-
-{{message}}
+```env
+# SMTP Email Configuration
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SERVICE=gmail
+SMTP_MAIL=your_email@gmail.com
+SMTP_PASSWORD=your_app_password
+EMAIL_FROM="DevHatch OJT Portal <your_email@gmail.com>"
 ```
 
-4. **Template Variables** (add these):
-   - `to_email` - Recipient email
-   - `to_name` - Recipient name
-   - `subject` - Email subject
-   - `message` - Email content
-   - `from_name` - Sender name
-   - `reply_to` - Reply email
+### Configuration Details
 
-5. **Save the template** and copy the **Template ID**
+- `SMTP_HOST`: SMTP server (default is Gmail)
+- `SMTP_PORT`: SMTP port (default is 587 for TLS)
+- `SMTP_SERVICE`: Email service provider (e.g., 'gmail')
+- `SMTP_MAIL`: Your email address
+- `SMTP_PASSWORD`: App password for your email account
+- `EMAIL_FROM`: Optional custom sender name and email
 
-### 4. Get Your Keys
+## Gmail App Password Setup
 
-1. **Service ID**: Go to "Email Services" → Copy your service ID
-2. **Template ID**: Go to "Email Templates" → Copy your template ID  
-3. **Public Key**: Go to "Account" → Copy your public key
+1. Enable 2-Step Verification for your Google Account
+2. Go to App Passwords in your Google Account
+3. Select "Mail" and "Other (Custom name)"
+4. Generate and use the app password in `SMTP_PASSWORD`
 
-### 5. Add Environment Variables
+## Sending Emails in Next.js
 
-Add these to your `.env.local` file:
+### Server Actions
 
-```bash
-# EmailJS Configuration (Free Email Service)
-NEXT_PUBLIC_EMAILJS_SERVICE_ID=service_xxxxxxx
-NEXT_PUBLIC_EMAILJS_TEMPLATE_ID=template_xxxxxxx
-NEXT_PUBLIC_EMAILJS_PUBLIC_KEY=xxxxxxxxxxxxxxx
+Use the server actions in `app/actions/email-actions.ts` to send emails:
+
+```typescript
+import { sendApplicationStatusEmail, sendBulkStatusEmails } from '@/app/actions/email-actions';
+
+// Send a single email
+const result = await sendApplicationStatusEmail({
+  application: applicationData,
+  jobPosting: jobPostingData,
+  adminName: 'John Doe'
+});
+
+// Send bulk emails
+const bulkResult = await sendBulkStatusEmails([
+  { application: app1, jobPosting: job1 },
+  { application: app2, jobPosting: job2 }
+]);
 ```
 
-**Example:**
-```bash
-NEXT_PUBLIC_EMAILJS_SERVICE_ID=service_abc123
-NEXT_PUBLIC_EMAILJS_TEMPLATE_ID=template_def456
-NEXT_PUBLIC_EMAILJS_PUBLIC_KEY=ghi789jkl012mno
-```
+### Email Types
 
-### 6. Test Email Functionality
-
-1. **Restart your development server**:
-   ```bash
-   pnpm dev
-   ```
-
-2. **Update an application status** in the admin panel
-
-3. **Check the console** for email sending logs
-
-4. **Check your email** - you should receive the notification!
-
-## Email Templates
-
-The system includes these email types:
-
-### 🎉 **Interview Scheduled**
-- Professional interview invitation
-- Date, time, location details
-- Preparation tips and instructions
-
-### 🎊 **Application Approved**
-- Congratulations message
-- Next steps and onboarding info
-- Welcome to the team message
-
-### 📄 **Application Rejected**
-- Professional and encouraging
-- Constructive feedback
-- Future opportunities guidance
-
-### 📊 **Status Updates**
-- General status change notifications
-- Clear status explanations
-
-## Email Features
-
-### 📧 **Professional Content**
-- University branding
-- Clear, friendly messaging
-- Proper formatting
-
-### 📱 **Works Everywhere**
-- All email clients supported
-- Mobile-friendly
-- Plain text format (universal compatibility)
-
-### 🔧 **Customizable**
-- Easy to modify templates
-- Dynamic content
-- Personalized messages
-
-## Free Tier Limits
-
-- ✅ **200 emails/month** (perfect for university portal)
-- ✅ **No credit card required**
-- ✅ **No expiration** - free forever
-- ✅ **All features included**
+- Interview Invitation
+- Hired Notification
+- Rejected Application
+- Generic Status Update
 
 ## Troubleshooting
 
-### "EmailJS not configured" message
-1. **Check environment variables** are correct
-2. **Restart development server**
-3. **Verify .env.local** file format
+- Ensure all SMTP environment variables are set
+- Check firewall and network settings
+- Verify app password is correctly generated
+- Emails are sent only from server-side code
 
-### Emails not being sent
-1. **Check EmailJS dashboard** for error logs
-2. **Verify email service** is connected
-3. **Test template** in EmailJS dashboard
-4. **Check spam folder**
+### Common Issues
 
-### Gmail authentication issues
-1. **Re-connect Gmail** in EmailJS dashboard
-2. **Check Gmail permissions**
-3. **Try incognito mode** for setup
-
-## Alternative Free Services
-
-If you prefer other options:
-
-### **Nodemailer + Gmail**
-```bash
-# Add to .env.local
-GMAIL_USER=your-email@gmail.com
-GMAIL_APP_PASSWORD=your-app-password
-```
-
-### **SendGrid Free Tier**
-```bash
-# 100 emails/day free
-SENDGRID_API_KEY=your-api-key
-```
+- **Authentication Failure**: Double-check your app password
+- **Port Issues**: 
+  - Port 587 for TLS 
+  - Port 465 for SSL
+- **Service-Specific Settings**: Some providers may require specific configurations
 
 ## Security Notes
 
-### Safe Public Keys
-- EmailJS public keys are **safe to expose**
-- They're designed for client-side use
-- No sensitive data in environment variables
+- Never commit `.env` file to version control
+- Use environment-specific configurations
+- Rotate app passwords periodically
+- Emails are sent only through server actions
+- Sensitive data is not exposed in email templates 
 
-### Email Content
-- No sensitive student data in emails
-- Professional, university-appropriate content
-- GDPR/privacy compliant
+## Project Admin Notifications
 
-## Advanced Features
+### Configuring Admin Email Notifications
 
-### Custom Templates
-You can create multiple templates for different email types:
-1. Interview notifications
-2. Approval messages  
-3. Rejection letters
-4. Status updates
+You can configure admin email notifications using the following environment variables:
 
-### Email Analytics
-- Track delivery rates in EmailJS dashboard
-- Monitor email performance
-- View sending history
+```env
+# Primary admin email (main recipient)
+ADMIN_NOTIFICATION_EMAIL=steerhub@g.batstate-u.edu.ph
 
-### Bulk Sending
-- Send multiple notifications
-- Built-in rate limiting
-- Error handling
-
-## Next Steps
-
-1. ✅ **Set up EmailJS account** (5 minutes)
-2. ✅ **Connect your Gmail/email service**
-3. ✅ **Create email template**
-4. ✅ **Add environment variables**
-5. ✅ **Test email functionality**
-
-## Support
-
-### Resources
-- **EmailJS Documentation**: https://www.emailjs.com/docs/
-- **EmailJS Templates**: https://www.emailjs.com/docs/examples/
-- **Gmail Setup Guide**: https://www.emailjs.com/docs/examples/gmail/
-
-### Getting Help
-- EmailJS has excellent documentation
-- Free support via their website
-- Active community forums
-
-The email notification system is now completely free and ready to use! 📧✨
-
-## Sample Email Output
-
-When an interview is scheduled, students receive:
-
-```
-Subject: 🎉 Interview Scheduled - Frontend Developer at DevHatch
-
-Hi John Doe,
-
-Great news! We're excited to move forward with your application for the Frontend Developer position in the TRIOE project.
-
-📅 Interview Details:
-• Date: Monday, February 15, 2024
-• Time: 2:00 PM
-• Location: 3rd Floor, SteerHub Building
-• Type: In-Person Interview
-
-📝 Please prepare:
-• Review your application and portfolio
-• Prepare questions about the role and project
-• Arrive 10 minutes early
-• Bring copies of your resume
-
-If you need to reschedule, please contact us as soon as possible.
-
-Best regards,
-DevHatch Team
-DevHatch OJT Portal
-Batangas State University
+# Project admin emails (comma-separated list)
+PROJECT_ADMIN_EMAILS=project1admin@example.com,project2admin@example.com,project3admin@example.com
 ```
 
-Professional, clear, and informative! 🎯 
+#### Configuration Details
+- `ADMIN_NOTIFICATION_EMAIL`: The primary email address that will receive all admin notifications
+- `PROJECT_ADMIN_EMAILS`: A comma-separated list of additional email addresses to CC on admin notifications
+
+### Example
+```env
+# For multiple project admins
+PROJECT_ADMIN_EMAILS=trioe_admin@example.com,mrmed_admin@example.com,haptics_admin@example.com
+```
+
+### Notes
+- Emails are trimmed to remove any accidental whitespace
+- If no project admin emails are provided, only the primary admin email will receive notifications
+- Ensure all email addresses are valid and accessible 

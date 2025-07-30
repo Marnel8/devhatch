@@ -1,7 +1,7 @@
 import { ref, push, set, get, update, remove, query, orderByChild, equalTo } from "firebase/database"
 import { database } from "@/app/lib/firebase"
 import type { Application } from "@/types"
-import { emailService, type EmailNotificationData } from "./email-service"
+import { sendApplicationStatusEmail, type EmailNotificationData } from "./email-transport"
 import { getAllJobPostings, incrementJobFilledSlots, decrementJobFilledSlots } from "./jobs-service"
 
 // Create a new application
@@ -249,7 +249,7 @@ export async function updateApplicationStatus(
             rejectionReason: notes
           }
           
-          await emailService.sendApplicationStatusUpdate(emailData)
+          await sendApplicationStatusEmail(emailData)
           console.log(`✅ Email notification sent for application ${id} status change to ${status}`)
         }
       } catch (emailError) {
@@ -322,7 +322,7 @@ export async function scheduleInterview(
             }
           }
           
-          await emailService.sendApplicationStatusUpdate(emailData)
+          await sendApplicationStatusEmail(emailData)
           console.log(`✅ Interview notification email sent for application ${id}`)
         }
       } catch (emailError) {

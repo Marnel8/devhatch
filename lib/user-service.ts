@@ -1,5 +1,5 @@
 import { createUserWithEmailAndPassword } from "firebase/auth"
-import { ref, set, get } from "firebase/database"
+import { ref, set, get, query, orderByChild, equalTo } from "firebase/database"
 import { auth, database } from "@/app/lib/firebase"
 import type { User } from "@/types"
 
@@ -118,5 +118,86 @@ export async function getUserByEmail(email: string): Promise<User | null> {
   } catch (error) {
     console.error("❌ Error fetching user by email:", error)
     return null
+  }
+} 
+
+export async function getProjectAdmins(projectName: string): Promise<string[]> {
+  try {
+    const usersRef = ref(database, "users");
+    
+    // Log the entire project name for debugging
+    console.log(`🔍 Searching for project admins for project: ${projectName}`);
+
+    // First, try querying by role
+    const projectAdminsQuery = query(
+      usersRef, 
+      orderByChild("role"), 
+      equalTo("project_admin")
+    );
+
+    const snapshot = await get(projectAdminsQuery);
+    
+    // Log raw snapshot data
+    console.log('🔍 Raw Snapshot Exists:', snapshot.exists());
+    if (snapshot.exists()) {
+      console.log('🔍 Raw Snapshot Keys:', Object.keys(snapshot.val() || {}));
+    }
+
+    if (!snapshot.exists()) {
+      console.log(`❌ No project admins found for role query`);
+      
+      // Fallback: get all users and manually filter
+      const allUsersSnapshot = await get(usersRef);
+      
+      if (!allUsersSnapshot.exists()) {
+        console.log('❌ No users found in the database');
+        return [];
+      }
+
+      const allUsersData = allUsersSnapshot.val();
+      console.log('🔍 Fallback - Total Users:', Object.keys(allUsersData || {}).length);
+
+      // Log all users for debugging
+      Object.entries(allUsersData || {}).forEach(([key, user]: [string, any]) => {
+        console.log(`🔍 User ${key} Details:`, {
+          role: user.role,
+          projectAccess: user.projectAccess,
+          email: user.email
+        });
+      });
+
+      const adminEmails = Object.values(allUsersData || {})
+        .filter((user: any) => 
+          user.role === "project_admin" && 
+          user.projectAccess && 
+          user.projectAccess.includes(projectName)
+        )
+        .map((user: any) => user.email)
+        .filter(Boolean);
+
+      console.log(`🔍 Fallback - Found ${adminEmails.length} admins for project: ${projectName}`);
+      console.log('📧 Fallback Admin Emails:', adminEmails);
+
+      return adminEmails;
+    }
+
+    const adminsData = snapshot.val();
+    console.log('🔍 Project Admin Users:', Object.keys(adminsData || {}));
+
+    const adminEmails = Object.values(adminsData || {})
+      .filter((user: any) => 
+        user.projectAccess && 
+        user.projectAccess.includes(projectName)
+      )
+      .map((user: any) => user.email)
+      .filter(Boolean);
+
+    console.log(`🔍 Found ${adminEmails.length} admins for project: ${projectName}`);
+    console.log('📧 Admin Emails:', adminEmails);
+
+    return adminEmails;
+  } catch (error) {
+    console.error(`❌ Error fetching admins for project ${projectName}:`, error);
+    return [];
   }
 } 

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Application Status Update - DevHatch</title>
+</head>
+<body>
+    <h1>Application Status Update</h1>
+    <p>Hi <%= recipientName %>,</p>
+    
+    <p>We wanted to update you on your application for the <%= jobTitle %> position at DevHatch.</p>
+    
+    <p>Your application status has been updated to: <%= status %>.</p>
+    
+    <% if (status === 'pending') { %>
+        <p>Your application is currently being reviewed by our team.</p>
+    <% } else if (status === 'for_review') { %>
+        <p>Your application has been moved to the review stage.</p>
+    <% } else { %>
+        <p>We will keep you updated on any further changes.</p>
+    <% } %>
+    
+    <p>If you have any questions, please don't hesitate to contact us.</p>
+    
+    <p>Best regards,<br>
+    <%= adminName || 'DevHatch Team' %><br>
+    DevHatch OJT Portal<br>
+    Batangas State University</p>
+</body>
+</html> 

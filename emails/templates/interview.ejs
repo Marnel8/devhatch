@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Interview Invitation - DevHatch</title>
+</head>
+<body>
+    <h1>🎉 Interview Scheduled</h1>
+    <p>Hi <%= recipientName %>,</p>
+    
+    <p>Great news! We're excited to move forward with your application for the <%= jobTitle %> position in the <%= projectName %> project.</p>
+    
+    <h2>📅 Interview Details:</h2>
+    <ul>
+        <li>Date: <%= interviewDate %></li>
+        <li>Time: <%= interviewTime %></li>
+        <li>Location: <%= interviewLocation %></li>
+        <li>Type: <%= interviewType %></li>
+    </ul>
+    
+    <h2>📝 Please prepare:</h2>
+    <ul>
+        <li>Review your application and portfolio</li>
+        <li>Prepare questions about the role and project</li>
+        <% if (interviewType === 'Online Interview') { %>
+            <li>Test your camera and microphone</li>
+        <% } else if (interviewType === 'Phone Interview') { %>
+            <li>Ensure good phone signal</li>
+        <% } else { %>
+            <li>Arrive 10 minutes early</li>
+        <% } %>
+        <li>Bring copies of your resume</li>
+    </ul>
+    
+    <p>If you need to reschedule, please contact us as soon as possible.</p>
+    
+    <p>Best regards,<br>
+    <%= adminName || 'DevHatch Team' %><br>
+    DevHatch OJT Portal<br>
+    Batangas State University</p>
+</body>
+</html> 

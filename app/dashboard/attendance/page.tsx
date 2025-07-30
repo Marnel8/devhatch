@@ -20,29 +20,16 @@ export default function AttendancePage() {
       id: "1",
       studentId: "student1",
       ojtNumber: "OJT-2024-001",
-      timeIn: "2024-01-22T08:30:00",
-      timeOut: "2024-01-22T17:00:00",
-      date: "2024-01-22",
-      hoursWorked: 8.5,
-    },
-    {
-      id: "2",
-      studentId: "student1",
-      ojtNumber: "OJT-2024-001",
-      timeIn: "2024-01-21T08:45:00",
-      timeOut: "2024-01-21T17:15:00",
-      date: "2024-01-21",
-      hoursWorked: 8.5,
-    },
-    {
-      id: "3",
-      studentId: "student1",
-      ojtNumber: "OJT-2024-001",
-      timeIn: "2024-01-20T08:30:00",
-      timeOut: "2024-01-20T17:00:00",
-      date: "2024-01-20",
-      hoursWorked: 8.5,
-    },
+      studentName: "John Doe",
+      project: "TRIOE",
+      timeIn: "2024-01-15T08:00:00Z",
+      timeOut: "2024-01-15T17:00:00Z",
+      date: "2024-01-15",
+      hoursWorked: 8,
+      status: "complete",
+      location: null,
+      notes: "Regular attendance"
+    }
   ])
 
   const totalHoursThisWeek = attendanceRecords
@@ -153,7 +140,7 @@ export default function AttendancePage() {
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
                           <div>
                             <span className="text-gray-600">Time In:</span>
-                            <p className="font-medium">{formatTime(record.timeIn)}</p>
+                            <p className="font-medium">{record.timeIn ? formatTime(record.timeIn) : "Not recorded"}</p>
                           </div>
                           <div>
                             <span className="text-gray-600">Time Out:</span>
@@ -210,7 +197,7 @@ export default function AttendancePage() {
                           <div className="grid grid-cols-2 gap-4 text-sm">
                             <div>
                               <span className="text-gray-600">Time In:</span>
-                              <p className="font-medium">{formatTime(record.timeIn)}</p>
+                              <p className="font-medium">{record.timeIn ? formatTime(record.timeIn) : "Not recorded"}</p>
                             </div>
                             <div>
                               <span className="text-gray-600">Time Out:</span>

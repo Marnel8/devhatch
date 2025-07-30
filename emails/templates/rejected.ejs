@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Application Update - DevHatch</title>
+</head>
+<body>
+    <h1>Application Update</h1>
+    <p>Hi <%= recipientName %>,</p>
+    
+    <p>Thank you for your interest in the <%= jobTitle %> position at DevHatch.</p>
+    
+    <p><%= rejectionReason || 'After careful consideration, we have decided to move forward with other candidates who more closely match our current project requirements.' %></p>
+    
+    <p>We received many qualified applications, and while your background is impressive, we've decided to proceed with candidates whose skills more closely match our current needs.</p>
+    
+    <h2>💡 Don't Give Up!</h2>
+    <ul>
+        <li>Continue building your portfolio with personal projects</li>
+        <li>Stay updated with the latest technologies</li>
+        <li>Consider contributing to open-source projects</li>
+        <li>Keep an eye on our future job postings</li>
+    </ul>
+    
+    <p>We encourage you to apply for future opportunities with DevHatch.</p>
+    
+    <p>Best regards,<br>
+    <%= adminName || 'DevHatch Team' %><br>
+    DevHatch OJT Portal<br>
+    Batangas State University</p>
+</body>
+</html> 
