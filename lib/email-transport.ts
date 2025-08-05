@@ -83,7 +83,7 @@ export async function sendEmail(options: EmailOptions): Promise<{ success: boole
     };
   }
 
-  // Validate required environment variables with more flexibility
+  // Enhanced environment variable validation with detailed logging
   const requiredEnvVars = [
     'SMTP_HOST', 'SMTP_PORT', 'SMTP_SERVICE', 
     'SMTP_MAIL', 'SMTP_PASSWORD'
@@ -93,7 +93,7 @@ export async function sendEmail(options: EmailOptions): Promise<{ success: boole
   
   if (missingVars.length > 0) {
     const errorMessage = `Missing email configuration: ${missingVars.join(', ')}. 
-    Please set these environment variables in your .env file.
+    Please set these environment variables in your production environment.
     Example:
     SMTP_HOST=smtp.gmail.com
     SMTP_PORT=587
@@ -101,7 +101,15 @@ export async function sendEmail(options: EmailOptions): Promise<{ success: boole
     SMTP_MAIL=your_email@gmail.com
     SMTP_PASSWORD=your_app_password`;
     
-    console.warn(errorMessage);
+    console.error('❌ Email Configuration Error:', errorMessage);
+    console.error('❌ Current environment variables:', {
+      SMTP_HOST: process.env.SMTP_HOST ? 'SET' : 'MISSING',
+      SMTP_PORT: process.env.SMTP_PORT ? 'SET' : 'MISSING',
+      SMTP_SERVICE: process.env.SMTP_SERVICE ? 'SET' : 'MISSING',
+      SMTP_MAIL: process.env.SMTP_MAIL ? 'SET' : 'MISSING',
+      SMTP_PASSWORD: process.env.SMTP_PASSWORD ? 'SET' : 'MISSING',
+      NODE_ENV: process.env.NODE_ENV
+    });
     
     return {
       success: false,
@@ -110,10 +118,21 @@ export async function sendEmail(options: EmailOptions): Promise<{ success: boole
   }
 
   try {
+    // Log configuration for debugging (without sensitive data)
+    console.log('📧 Email Configuration:', {
+      host: process.env.SMTP_HOST,
+      port: process.env.SMTP_PORT,
+      service: process.env.SMTP_SERVICE,
+      user: process.env.SMTP_MAIL,
+      password: process.env.SMTP_PASSWORD ? 'SET' : 'MISSING',
+      from: process.env.EMAIL_FROM,
+      nodeEnv: process.env.NODE_ENV
+    });
+
     // Dynamically import server-side dependencies
     const { nodemailer, path, ejs } = await importServerDependencies();
 
-    // Create transporter
+    // Create transporter with enhanced error handling
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST || 'smtp.gmail.com',
       port: parseInt(process.env.SMTP_PORT || '587'),
@@ -127,14 +146,25 @@ export async function sendEmail(options: EmailOptions): Promise<{ success: boole
       // Disable SSL certificate verification in development
       tls: {
         rejectUnauthorized: process.env.NODE_ENV === 'production'
-      }
+      },
+      // Add connection timeout
+      connectionTimeout: 60000,
+      greetingTimeout: 30000,
+      socketTimeout: 60000
     });
+
+    // Verify connection before sending
+    console.log('🔍 Verifying SMTP connection...');
+    await transporter.verify();
+    console.log('✅ SMTP connection verified successfully');
 
     // Resolve template path 
     const templatePath = path.join(process.cwd(), 'emails', 'templates', options.template);
+    console.log('📄 Template path:', templatePath);
 
     // Render email template
     const html: string = await ejs.renderFile(templatePath, options.data);
+    console.log('📝 Email template rendered successfully');
 
     // Prepare mail options
     const mailOptions = {
@@ -146,16 +176,37 @@ export async function sendEmail(options: EmailOptions): Promise<{ success: boole
       bcc: options.bcc
     };
 
+    console.log('📤 Sending email to:', options.to);
+    console.log('📧 Subject:', options.subject);
+
     // Send email
-    await transporter.sendMail(mailOptions);
+    const result = await transporter.sendMail(mailOptions);
 
     console.log(`✅ Email sent successfully to ${options.to}`);
+    console.log('📧 Message ID:', result.messageId);
     return { success: true, message: 'Email sent successfully' };
   } catch (error) {
     console.error('❌ Email sending failed:', error);
+    
+    // Provide more specific error messages
+    let errorMessage = 'Unknown error occurred';
+    if (error instanceof Error) {
+      if (error.message.includes('Invalid login')) {
+        errorMessage = 'SMTP authentication failed - check your email and app password';
+      } else if (error.message.includes('ECONNREFUSED')) {
+        errorMessage = 'SMTP connection refused - check host and port settings';
+      } else if (error.message.includes('ENOTFOUND')) {
+        errorMessage = 'SMTP host not found - check SMTP_HOST setting';
+      } else if (error.message.includes('timeout')) {
+        errorMessage = 'SMTP connection timeout - check network and firewall settings';
+      } else {
+        errorMessage = error.message;
+      }
+    }
+    
     return { 
       success: false, 
-      message: error instanceof Error ? error.message : 'Unknown error occurred' 
+      message: errorMessage 
     };
   }
 }
@@ -341,4 +392,131 @@ export async function sendAdminNotification(data: EmailNotificationData): Promis
     template: templateName,
     data: templateData
   });
+} 
+
+// Test email function for debugging
+export async function testEmailConnection(): Promise<{ success: boolean; message: string; details?: any }> {
+  if (typeof window !== 'undefined') {
+    return { 
+      success: false, 
+      message: 'Email testing is only allowed on the server' 
+    };
+  }
+
+  try {
+    console.log('🧪 Testing email connection...');
+    
+    // Check environment variables
+    const envVars = {
+      SMTP_HOST: process.env.SMTP_HOST,
+      SMTP_PORT: process.env.SMTP_PORT,
+      SMTP_SERVICE: process.env.SMTP_SERVICE,
+      SMTP_MAIL: process.env.SMTP_MAIL,
+      SMTP_PASSWORD: process.env.SMTP_PASSWORD ? 'SET' : 'MISSING',
+      EMAIL_FROM: process.env.EMAIL_FROM,
+      NODE_ENV: process.env.NODE_ENV
+    };
+
+    console.log('📋 Environment Variables:', envVars);
+
+    const missingVars = Object.entries(envVars)
+      .filter(([key, value]) => key !== 'EMAIL_FROM' && key !== 'NODE_ENV' && !value)
+      .map(([key]) => key);
+
+    if (missingVars.length > 0) {
+      return {
+        success: false,
+        message: `Missing required environment variables: ${missingVars.join(', ')}`,
+        details: { missingVars, envVars }
+      };
+    }
+
+    // Import dependencies
+    const { nodemailer } = await importServerDependencies();
+
+    // Create transporter
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      service: process.env.SMTP_SERVICE,
+      auth: {
+        user: process.env.SMTP_MAIL,
+        pass: process.env.SMTP_PASSWORD,
+      },
+      secure: parseInt(process.env.SMTP_PORT || '587') === 465,
+      tls: {
+        rejectUnauthorized: process.env.NODE_ENV === 'production'
+      },
+      connectionTimeout: 30000,
+      greetingTimeout: 15000,
+      socketTimeout: 30000
+    });
+
+    // Test connection
+    console.log('🔍 Verifying SMTP connection...');
+    await transporter.verify();
+    console.log('✅ SMTP connection verified successfully');
+
+    // Test sending a simple email
+    const testMailOptions = {
+      from: process.env.EMAIL_FROM || `DevHatch OJT Portal <${process.env.SMTP_MAIL}>`,
+      to: process.env.SMTP_MAIL, // Send to yourself for testing
+      subject: 'Email Test - DevHatch OJT Portal',
+      html: `
+        <h2>Email Test Successful!</h2>
+        <p>This is a test email to verify that your email configuration is working correctly.</p>
+        <p><strong>Test Details:</strong></p>
+        <ul>
+          <li>Host: ${process.env.SMTP_HOST}</li>
+          <li>Port: ${process.env.SMTP_PORT}</li>
+          <li>Service: ${process.env.SMTP_SERVICE}</li>
+          <li>Environment: ${process.env.NODE_ENV}</li>
+          <li>Timestamp: ${new Date().toISOString()}</li>
+        </ul>
+        <p>If you received this email, your email configuration is working correctly!</p>
+      `
+    };
+
+    console.log('📤 Sending test email...');
+    const result = await transporter.sendMail(testMailOptions);
+    console.log('✅ Test email sent successfully');
+
+    return {
+      success: true,
+      message: 'Email connection test successful! Check your inbox for the test email.',
+      details: {
+        messageId: result.messageId,
+        envVars,
+        timestamp: new Date().toISOString()
+      }
+    };
+
+  } catch (error) {
+    console.error('❌ Email connection test failed:', error);
+    
+    let errorMessage = 'Unknown error occurred';
+    if (error instanceof Error) {
+      if (error.message.includes('Invalid login')) {
+        errorMessage = 'SMTP authentication failed - check your email and app password';
+      } else if (error.message.includes('ECONNREFUSED')) {
+        errorMessage = 'SMTP connection refused - check host and port settings';
+      } else if (error.message.includes('ENOTFOUND')) {
+        errorMessage = 'SMTP host not found - check SMTP_HOST setting';
+      } else if (error.message.includes('timeout')) {
+        errorMessage = 'SMTP connection timeout - check network and firewall settings';
+      } else {
+        errorMessage = error.message;
+      }
+    }
+
+    return {
+      success: false,
+      message: errorMessage,
+      details: {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        timestamp: new Date().toISOString()
+      }
+    };
+  }
 } 

@@ -3,6 +3,7 @@
 import { 
   sendApplicationStatusEmail, 
   sendBulkStatusEmails, 
+  testEmailConnection,
   EmailNotificationData 
 } from '@/lib/email-transport';
 
@@ -11,3 +12,8 @@ export {
   sendApplicationStatusEmail, 
   sendBulkStatusEmails 
 }; 
+
+// Test email connection function
+export async function testEmailSetup() {
+  return await testEmailConnection();
+} 
