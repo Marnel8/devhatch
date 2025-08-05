@@ -30,6 +30,8 @@ const result = await testEmailSetup();
 console.log(result);
 ```
 
+Or visit: `https://your-domain.com/api/test-email`
+
 ## Common Issues and Solutions
 
 ### Issue 1: Missing Environment Variables
@@ -53,7 +55,21 @@ vercel env add SMTP_PASSWORD
 vercel env add EMAIL_FROM
 ```
 
-### Issue 2: Gmail App Password Issues
+### Issue 2: Template File Not Found
+
+**Symptoms:**
+- Error: "ENOENT: no such file or directory, open '/var/task/emails/templates/status-update.ejs'"
+- Template files exist locally but not in production
+
+**Solution:**
+The code now includes fallback templates that will be used if the template files are not found in production. This should resolve the issue automatically.
+
+If you still see template errors:
+1. Check that the template files exist in `emails/templates/`
+2. The fallback templates will be used automatically
+3. No action needed - the system will work with built-in templates
+
+### Issue 3: Gmail App Password Issues
 
 **Symptoms:**
 - Error: "Invalid login" or "Authentication failed"
@@ -67,7 +83,7 @@ vercel env add EMAIL_FROM
 2. Use the 16-character app password (not your regular password)
 3. Update `SMTP_PASSWORD` in production
 
-### Issue 3: Network/Firewall Issues
+### Issue 4: Network/Firewall Issues
 
 **Symptoms:**
 - Error: "ECONNREFUSED" or "ENOTFOUND"
@@ -80,7 +96,7 @@ vercel env add EMAIL_FROM
    - Port 465 (SSL) - alternative
 3. Contact your hosting provider if needed
 
-### Issue 4: SSL/TLS Certificate Issues
+### Issue 5: SSL/TLS Certificate Issues
 
 **Symptoms:**
 - Error: "CERT_HAS_EXPIRED" or SSL-related errors
@@ -94,7 +110,7 @@ tls: {
 }
 ```
 
-### Issue 5: Rate Limiting
+### Issue 6: Rate Limiting
 
 **Symptoms:**
 - Emails work occasionally but fail frequently
@@ -115,6 +131,8 @@ Look for these log messages in your production console:
 📧 Email Configuration: { host: 'smtp.gmail.com', port: '587', ... }
 🔍 Verifying SMTP connection...
 ✅ SMTP connection verified successfully
+📄 Template loaded successfully
+📝 Email template rendered successfully
 📤 Sending email to: user@example.com
 ✅ Email sent successfully to user@example.com
 ```
@@ -132,6 +150,8 @@ export async function GET() {
   return Response.json(result);
 }
 ```
+
+Or visit: `https://your-domain.com/api/test-email`
 
 ### Step 3: Verify Environment Variables
 
@@ -222,4 +242,5 @@ If you're still having issues:
 | "ECONNREFUSED" | Network/firewall blocking | Check hosting provider settings |
 | "ENOTFOUND" | Wrong SMTP host | Verify SMTP_HOST setting |
 | "timeout" | Network issues | Increase timeout settings |
-| "Missing email configuration" | Environment variables not set | Add all required SMTP variables | 
+| "Missing email configuration" | Environment variables not set | Add all required SMTP variables |
+| "ENOENT: no such file or directory" | Template files missing | Use fallback templates (automatic) | 

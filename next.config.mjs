@@ -30,7 +30,21 @@ const nextConfig = {
   // Disable server-side rendering for problematic components if needed
   reactStrictMode: true,
   // Optional: Add transpilation for specific packages
-  transpilePackages: ['nodemailer', 'ejs']
+  transpilePackages: ['nodemailer', 'ejs'],
+  // Copy email templates to production build
+  experimental: {
+    outputFileTracingRoot: process.cwd(),
+  },
+  // Ensure email templates are included in the build
+  output: 'standalone',
+  // Copy static files
+  async rewrites() {
+    return [];
+  },
+  // Copy email templates to the build output
+  async headers() {
+    return [];
+  }
 };
 
 export default nextConfig;

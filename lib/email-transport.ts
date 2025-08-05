@@ -3,14 +3,162 @@
 import type { Application, JobPosting } from '@/types';
 import { getProjectAdmins } from './user-service';
 
-// Dynamically import server-side dependencies
-const importServerDependencies = async () => {
-  const nodemailer = await import('nodemailer');
-  const path = await import('path');
-  const ejs = await import('ejs');
-  
-  return { nodemailer, path, ejs };
-};
+// Import server-side dependencies
+async function importServerDependencies() {
+  if (typeof window !== 'undefined') {
+    throw new Error('Server dependencies cannot be imported on the client side');
+  }
+
+  try {
+    const [nodemailer, path, ejs] = await Promise.all([
+      import('nodemailer'),
+      import('path'),
+      import('ejs')
+    ]);
+
+    return {
+      nodemailer: nodemailer.default,
+      path: path.default,
+      ejs: ejs.default
+    };
+  } catch (error) {
+    console.error('Failed to import server dependencies:', error);
+    throw new Error('Failed to load email dependencies');
+  }
+}
+
+// Helper function to get template content
+async function getTemplateContent(templateName: string): Promise<string> {
+  try {
+    // Try to read template from file system
+    const [pathModule, fsModule] = await Promise.all([
+      import('path'),
+      import('fs/promises')
+    ]);
+
+    const templatePath = pathModule.default.join(process.cwd(), 'emails', 'templates', templateName);
+    return await fsModule.default.readFile(templatePath, 'utf-8');
+  } catch (error) {
+    console.warn(`Failed to read template file ${templateName}, using fallback`);
+    
+    // Fallback templates for common email types
+    const fallbackTemplates: Record<string, string> = {
+      'status-update.ejs': `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Application Status Update</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #2563eb;">Application Status Update</h2>
+        <p>Dear <%= data.application.firstName || data.application.studentName %>,</p>
+        <p>Your application for <strong><%= data.jobPosting?.title || 'the position' %></strong> has been updated.</p>
+        
+        <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin-top: 0;">Status: <span style="color: #059669;"><%= data.application.status.toUpperCase() %></span></h3>
+            <% if (data.application.reviewNotes) { %>
+                <p><strong>Notes:</strong> <%= data.application.reviewNotes %></p>
+            <% } %>
+        </div>
+        
+        <p>Thank you for your interest in our program.</p>
+        <p>Best regards,<br>DevHatch Team</p>
+    </div>
+</body>
+</html>`,
+      'interview.ejs': `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Interview Scheduled</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #2563eb;">Interview Scheduled</h2>
+        <p>Dear <%= data.application.firstName || data.application.studentName %>,</p>
+        <p>Your interview for <strong><%= data.jobPosting?.title || 'the position' %></strong> has been scheduled.</p>
+        
+        <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin-top: 0;">Interview Details</h3>
+            <p><strong>Date:</strong> <%= data.interviewDetails?.date %></p>
+            <p><strong>Time:</strong> <%= data.interviewDetails?.time %></p>
+            <p><strong>Location:</strong> <%= data.interviewDetails?.location %></p>
+            <p><strong>Type:</strong> <%= data.interviewDetails?.type %></p>
+            <% if (data.application.interviewNotes) { %>
+                <p><strong>Notes:</strong> <%= data.application.interviewNotes %></p>
+            <% } %>
+        </div>
+        
+        <p>Please prepare accordingly and arrive on time.</p>
+        <p>Best regards,<br>DevHatch Team</p>
+    </div>
+</body>
+</html>`,
+      'hired.ejs': `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Congratulations - You're Hired!</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #059669;">Congratulations! 🎉</h2>
+        <p>Dear <%= data.application.firstName || data.application.studentName %>,</p>
+        <p>We are pleased to inform you that your application for <strong><%= data.jobPosting?.title || 'the position' %></strong> has been approved!</p>
+        
+        <div style="background-color: #f0fdf4; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #059669;">
+            <h3 style="margin-top: 0; color: #059669;">Welcome to the Team!</h3>
+            <p>You have been selected to join our internship program. We look forward to working with you!</p>
+            <% if (data.application.reviewNotes) { %>
+                <p><strong>Notes:</strong> <%= data.application.reviewNotes %></p>
+            <% } %>
+        </div>
+        
+        <p>You will receive further instructions regarding your onboarding process.</p>
+        <p>Best regards,<br>DevHatch Team</p>
+    </div>
+</body>
+</html>`,
+      'rejected.ejs': `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Application Update</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #dc2626;">Application Update</h2>
+        <p>Dear <%= data.application.firstName || data.application.studentName %>,</p>
+        <p>Thank you for your interest in <strong><%= data.jobPosting?.title || 'our program' %></strong>.</p>
+        
+        <div style="background-color: #fef2f2; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #dc2626;">
+            <h3 style="margin-top: 0; color: #dc2626;">Application Status</h3>
+            <p>After careful consideration, we regret to inform you that we are unable to move forward with your application at this time.</p>
+            <% if (data.application.rejectionReason) { %>
+                <p><strong>Reason:</strong> <%= data.application.rejectionReason %></p>
+            <% } %>
+        </div>
+        
+        <p>We encourage you to apply for future opportunities.</p>
+        <p>Best regards,<br>DevHatch Team</p>
+    </div>
+</body>
+</html>`
+    };
+
+    const fallbackTemplate = fallbackTemplates[templateName];
+    if (!fallbackTemplate) {
+      throw new Error(`Template ${templateName} not found and no fallback available`);
+    }
+
+    return fallbackTemplate;
+  }
+}
 
 export interface EmailOptions {
   to: string;
@@ -158,12 +306,12 @@ export async function sendEmail(options: EmailOptions): Promise<{ success: boole
     await transporter.verify();
     console.log('✅ SMTP connection verified successfully');
 
-    // Resolve template path 
-    const templatePath = path.join(process.cwd(), 'emails', 'templates', options.template);
-    console.log('📄 Template path:', templatePath);
+    // Get template content (with fallback)
+    const templateContent = await getTemplateContent(options.template);
+    console.log('📄 Template loaded successfully');
 
     // Render email template
-    const html: string = await ejs.renderFile(templatePath, options.data);
+    const html: string = ejs.render(templateContent, options.data);
     console.log('📝 Email template rendered successfully');
 
     // Prepare mail options
