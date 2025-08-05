@@ -18,6 +18,26 @@ export async function GET() {
 
     console.log('📋 Environment Variables:', envCheck);
 
+    // Test template rendering
+    try {
+      const { ejs } = await import('ejs');
+      const testTemplate = `
+        <h2>Test Template</h2>
+        <p>Hello <%= recipientName %>,</p>
+        <p>This is a test for <%= jobTitle %>.</p>
+        <p>Best regards, <%= adminName %></p>
+      `;
+      const testData = {
+        recipientName: 'Test User',
+        jobTitle: 'Test Position',
+        adminName: 'Test Admin'
+      };
+      const renderedHtml = ejs.render(testTemplate, testData);
+      console.log('✅ Template rendering test passed');
+    } catch (templateError) {
+      console.error('❌ Template rendering test failed:', templateError);
+    }
+
     const result = await testEmailSetup();
     
     return NextResponse.json({

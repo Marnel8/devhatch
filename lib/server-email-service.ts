@@ -175,18 +175,15 @@ export class ServerEmailService {
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
     <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
         <h2 style="color: #2563eb;">Application Status Update</h2>
-        <p>Dear <%= data.application.firstName || data.application.studentName %>,</p>
-        <p>Your application for <strong><%= data.jobPosting?.title || 'the position' %></strong> has been updated.</p>
+        <p>Dear <%= recipientName %>,</p>
+        <p>Your application for <strong><%= jobTitle %></strong> has been updated.</p>
         
         <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
-            <h3 style="margin-top: 0;">Status: <span style="color: #059669;"><%= data.application.status.toUpperCase() %></span></h3>
-            <% if (data.application.reviewNotes) { %>
-                <p><strong>Notes:</strong> <%= data.application.reviewNotes %></p>
-            <% } %>
+            <h3 style="margin-top: 0;">Status: <span style="color: #059669;"><%= status %></span></h3>
         </div>
         
         <p>Thank you for your interest in our program.</p>
-        <p>Best regards,<br>DevHatch Team</p>
+        <p>Best regards,<br><%= adminName %></p>
     </div>
 </body>
 </html>`,
@@ -200,22 +197,19 @@ export class ServerEmailService {
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
     <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
         <h2 style="color: #2563eb;">Interview Scheduled</h2>
-        <p>Dear <%= data.application.firstName || data.application.studentName %>,</p>
-        <p>Your interview for <strong><%= data.jobPosting?.title || 'the position' %></strong> has been scheduled.</p>
+        <p>Dear <%= recipientName %>,</p>
+        <p>Your interview for <strong><%= jobTitle %></strong> has been scheduled.</p>
         
         <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
             <h3 style="margin-top: 0;">Interview Details</h3>
-            <p><strong>Date:</strong> <%= data.interviewDetails?.date %></p>
-            <p><strong>Time:</strong> <%= data.interviewDetails?.time %></p>
-            <p><strong>Location:</strong> <%= data.interviewDetails?.location %></p>
-            <p><strong>Type:</strong> <%= data.interviewDetails?.type %></p>
-            <% if (data.application.interviewNotes) { %>
-                <p><strong>Notes:</strong> <%= data.application.interviewNotes %></p>
-            <% } %>
+            <p><strong>Date:</strong> <%= interviewDate %></p>
+            <p><strong>Time:</strong> <%= interviewTime %></p>
+            <p><strong>Location:</strong> <%= interviewLocation %></p>
+            <p><strong>Type:</strong> <%= interviewType %></p>
         </div>
         
         <p>Please prepare accordingly and arrive on time.</p>
-        <p>Best regards,<br>DevHatch Team</p>
+        <p>Best regards,<br><%= adminName %></p>
     </div>
 </body>
 </html>`,
@@ -229,19 +223,16 @@ export class ServerEmailService {
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
     <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
         <h2 style="color: #059669;">Congratulations! 🎉</h2>
-        <p>Dear <%= data.application.firstName || data.application.studentName %>,</p>
-        <p>We are pleased to inform you that your application for <strong><%= data.jobPosting?.title || 'the position' %></strong> has been approved!</p>
+        <p>Dear <%= recipientName %>,</p>
+        <p>We are pleased to inform you that your application for <strong><%= jobTitle %></strong> has been approved!</p>
         
         <div style="background-color: #f0fdf4; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #059669;">
             <h3 style="margin-top: 0; color: #059669;">Welcome to the Team!</h3>
             <p>You have been selected to join our internship program. We look forward to working with you!</p>
-            <% if (data.application.reviewNotes) { %>
-                <p><strong>Notes:</strong> <%= data.application.reviewNotes %></p>
-            <% } %>
         </div>
         
         <p>You will receive further instructions regarding your onboarding process.</p>
-        <p>Best regards,<br>DevHatch Team</p>
+        <p>Best regards,<br><%= adminName %></p>
     </div>
 </body>
 </html>`,
@@ -255,19 +246,19 @@ export class ServerEmailService {
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
     <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
         <h2 style="color: #dc2626;">Application Update</h2>
-        <p>Dear <%= data.application.firstName || data.application.studentName %>,</p>
-        <p>Thank you for your interest in <strong><%= data.jobPosting?.title || 'our program' %></strong>.</p>
+        <p>Dear <%= recipientName %>,</p>
+        <p>Thank you for your interest in <strong><%= jobTitle %></strong>.</p>
         
         <div style="background-color: #fef2f2; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #dc2626;">
             <h3 style="margin-top: 0; color: #dc2626;">Application Status</h3>
             <p>After careful consideration, we regret to inform you that we are unable to move forward with your application at this time.</p>
-            <% if (data.application.rejectionReason) { %>
-                <p><strong>Reason:</strong> <%= data.application.rejectionReason %></p>
+            <% if (rejectionReason) { %>
+                <p><strong>Reason:</strong> <%= rejectionReason %></p>
             <% } %>
         </div>
         
         <p>We encourage you to apply for future opportunities.</p>
-        <p>Best regards,<br>DevHatch Team</p>
+        <p>Best regards,<br><%= adminName %></p>
     </div>
 </body>
 </html>`
